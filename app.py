@@ -11,40 +11,26 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- MATRIKS RAIN ANIMATION & GLOBAL CSS ---
+# --- CSS & ANIMASI MATRIX ---
 st.markdown("""
 <style>
-    /* Import Font Hacker */
     @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
-    /* PAKSA CURSOR JADI CROSSHAIR UNTUK SEMUA ELEMEN */
-    * {
-        cursor: crosshair !important;
-    }
+    * { cursor: crosshair !important; }
 
-    /* BACKGROUND UTAMA */
     .stApp {
         background-color: #000;
         color: #00ff41;
         font-family: 'Share Tech Mono', monospace;
     }
 
-    /* TITLE GLITCH */
-    @keyframes glitch {
-        0% { transform: translate(0) }
-        20% { transform: translate(-2px, 2px) }
-        40% { transform: translate(-2px, -2px) }
-        60% { transform: translate(2px, 2px) }
-        80% { transform: translate(2px, -2px) }
-        100% { transform: translate(0) }
-    }
+    /* GLITCH HEADER */
     .glitch-header {
         color: #00ff41;
         font-size: 3.5rem;
         font-weight: 800;
         text-align: center;
         text-shadow: 2px 2px #003300;
-        animation: glitch 1.5s infinite;
         letter-spacing: 5px;
         margin-bottom: 20px;
     }
@@ -57,11 +43,7 @@ st.markdown("""
         font-family: 'Share Tech Mono', monospace;
         text-align: center;
         font-size: 1.2rem;
-        z-index: 100; /* Biar di atas matrix rain */
-    }
-    .stTextInput > div > div > input:focus {
-        box-shadow: 0 0 20px #00ff41;
-        background-color: #000 !important;
+        z-index: 100;
     }
 
     /* TOMBOL */
@@ -74,6 +56,7 @@ st.markdown("""
         text-transform: uppercase;
         padding: 10px;
         transition: 0.3s;
+        width: 100%;
         z-index: 100;
     }
     .stButton > button:hover {
@@ -83,44 +66,35 @@ st.markdown("""
         font-weight: bold;
     }
 
-    /* HASIL SCAN */
-    div[data-baseweb="notification"] {
-        background-color: rgba(0, 0, 0, 0.9) !important;
-        border: 1px solid #00ff41 !important;
-        color: #00ff41 !important;
-        z-index: 100;
+    /* RESULT BOXES */
+    .result-box {
+        border: 1px solid #00ff41;
+        padding: 10px;
+        margin-bottom: 10px;
+        background: rgba(0, 20, 0, 0.8);
     }
-    a { color: #fff !important; text-decoration: none; border-bottom: 1px dotted #fff; }
-    a:hover { text-shadow: 0 0 10px #fff; }
-
-    /* CANVAS MATRIX RAIN (Ditaruh di belakang) */
+    .manual-box {
+        border: 1px solid #ffcc00;
+        padding: 10px;
+        margin-bottom: 10px;
+        background: rgba(20, 20, 0, 0.8);
+        color: #ffcc00;
+    }
+    a { text-decoration: none; font-weight: bold; }
+    
+    /* MATRIX CANVAS */
     #matrix-canvas {
         position: fixed;
         top: 0;
         left: 0;
         width: 100vw;
         height: 100vh;
-        z-index: -1; /* Di belakang konten */
-        opacity: 0.2; /* Transparan biar tulisan tetap terbaca */
+        z-index: -1;
+        opacity: 0.15;
         pointer-events: none;
     }
 
-    /* SIGNATURE */
-    .footer-sig {
-        position: fixed;
-        bottom: 10px;
-        width: 100%;
-        text-align: center;
-        color: #00ff41;
-        font-family: 'Share Tech Mono', monospace;
-        opacity: 0.8;
-        font-size: 1rem;
-        pointer-events: none;
-        text-shadow: 0 0 10px #00ff41;
-        z-index: 99;
-    }
-
-    /* SEMBUNYIKAN UI BAWAAN */
+    /* HIDE UI */
     #MainMenu, footer, header {visibility: hidden;}
     
 </style>
@@ -129,42 +103,27 @@ st.markdown("""
 <script>
     const canvas = document.getElementById('matrix-canvas');
     const ctx = canvas.getContext('2d');
-
-    // Set canvas full screen
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-
-    const katakana = '01'; // Bisa diganti '01' atau huruf jepang
+    const katakana = '01';
     const letters = katakana.split('');
-
     const fontSize = 16;
     const columns = canvas.width / fontSize;
-
     const drops = [];
-    for(let x = 0; x < columns; x++) {
-        drops[x] = 1;
-    }
-
+    for(let x = 0; x < columns; x++) { drops[x] = 1; }
     function draw() {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; // Efek trail pudar
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.fillStyle = '#0F0'; // Warna teks hijau
+        ctx.fillStyle = '#0F0';
         ctx.font = fontSize + 'px monospace';
-
         for(let i = 0; i < drops.length; i++) {
             const text = letters[Math.floor(Math.random() * letters.length)];
             ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-
-            if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                drops[i] = 0;
-            }
+            if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) { drops[i] = 0; }
             drops[i]++;
         }
     }
-    setInterval(draw, 33); // Kecepatan animasi
-
-    // Resize handling
+    setInterval(draw, 33);
     window.addEventListener('resize', () => {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -174,36 +133,44 @@ st.markdown("""
 
 # --- LOGIKA PROGRAM ---
 def check_username(username):
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    sites = {
-        "INSTAGRAM": "https://www.instagram.com/{}",
-        "TIKTOK": "https://www.tiktok.com/@{}",
-        "TWITTER/X": "https://twitter.com/{}",
-        "FACEBOOK": "https://www.facebook.com/{}",
-        "TELEGRAM": "https://t.me/{}",
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+    
+    # KATEGORI 1: SITUS YANG BISA DISCAN OTOMATIS
+    sites_auto = {
         "GITHUB": "https://github.com/{}",
         "SPOTIFY": "https://open.spotify.com/user/{}",
-        "YOUTUBE": "https://www.youtube.com/@{}",
         "WATTPAD": "https://www.wattpad.com/user/{}",
         "ROBLOX": "https://www.roblox.com/user.aspx?username={}",
         "STEAM": "https://steamcommunity.com/id/{}",
+        "PINTEREST": "https://www.pinterest.com/{}",
+        "VIMEO": "https://vimeo.com/{}",
+        "MEDIUM": "https://medium.com/@{}",
+    }
+
+    # KATEGORI 2: SITUS HIGH SECURITY (ANTI-BOT) - WAJIB CEK MANUAL
+    sites_manual = {
+        "INSTAGRAM": "https://www.instagram.com/{}",
+        "TIKTOK": "https://www.tiktok.com/@{}",
+        "TWITTER / X": "https://twitter.com/{}",
+        "FACEBOOK": "https://www.facebook.com/{}",
+        "TELEGRAM": "https://t.me/{}",
+        "YOUTUBE": "https://www.youtube.com/@{}"
     }
 
     found_list = []
     
-    # Progress Bar Custom
+    # Progress Bar
     progress_text = "INITIALIZING BRUTEFORCE..."
     my_bar = st.progress(0, text=progress_text)
     
-    total = len(sites)
+    total = len(sites_auto) + len(sites_manual)
     count = 0
 
-    for site, url_pattern in sites.items():
+    # 1. SCANNING AUTO SITES
+    for site, url_pattern in sites_auto.items():
         url = url_pattern.format(username)
         count += 1
-        
-        status_msg = f"SCANNING NODE: {site}... {random.randint(10,99)}%"
-        my_bar.progress(count / total, text=status_msg)
+        my_bar.progress(count / total, text=f"HACKING NODE: {site}...")
         
         try:
             response = requests.get(url, headers=headers, timeout=2)
@@ -213,41 +180,68 @@ def check_username(username):
                     found_list.append((site, url))
         except:
             pass
-        
         time.sleep(0.05)
 
     my_bar.progress(1.0, text="SCAN COMPLETE.")
     time.sleep(0.5)
     my_bar.empty()
-    return found_list
+    
+    return found_list, sites_manual
 
 # --- TAMPILAN UTAMA ---
 st.markdown("<div class='glitch-header'>SYSTEM OVERRIDE</div>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #fff; letter-spacing: 3px; background: rgba(0,0,0,0.5); padding: 5px;'>[ TARGET IDENTIFICATION PROTOCOL ]</p>", unsafe_allow_html=True)
-
+st.markdown("<p style='text-align: center; color: #fff; background: rgba(0,0,0,0.5);'>[ TARGET IDENTIFICATION PROTOCOL ]</p>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
-# Layout Input
 target = st.text_input("", placeholder="ENTER USERNAME HERE")
-
 st.markdown("<br>", unsafe_allow_html=True)
 
 if st.button("INITIATE SEARCH"):
     if target:
         st.write(f"CONNECTING TO SERVER... [TARGET: {target}]")
         time.sleep(1)
-        results = check_username(target)
+        
+        # Jalankan Scan
+        hits, manuals = check_username(target)
         
         st.markdown("---")
-        st.markdown("### DATABASE MATCHES:")
-        if results:
-            for site, url in results:
-                st.success(f"HIT FOUND: {site}")
-                st.markdown(f"└─ [ACCESS DATA]({url})")
+        
+        # HASIL 1: YANG BERHASIL DITEMUKAN (HIJAU)
+        st.markdown("### ✅ CONFIRMED HITS (SCANNED):")
+        if hits:
+            for site, url in hits:
+                st.markdown(f"""
+                <div class='result-box'>
+                    <span style='color: #00ff41; font-weight: bold;'>[FOUND] {site}</span><br>
+                    <a href='{url}' target='_blank' style='color: #fff;'>└─ ACCESS DATA >></a>
+                </div>
+                """, unsafe_allow_html=True)
         else:
-            st.error("NEGATIVE RESULT. TARGET IS GHOSTING.")
+            st.warning("NO OPEN DATA FOUND IN PUBLIC NODES.")
+
+        st.markdown("---")
+
+        # HASIL 2: YANG WAJIB CEK MANUAL (KUNING)
+        st.markdown("### ⚠️ HIGH SECURITY NODES (MANUAL CHECK REQUIRED):")
+        st.info("Situs di bawah ini memblokir scanner otomatis. Klik link secara manual untuk memastikan.")
+        
+        col1, col2 = st.columns(2)
+        idx = 0
+        for site, url_pattern in manuals.items():
+            url = url_pattern.format(target)
+            
+            # Membagi tampilan jadi 2 kolom
+            with (col1 if idx % 2 == 0 else col2):
+                st.markdown(f"""
+                <div class='manual-box'>
+                    <span style='color: #ffcc00; font-weight: bold;'>[SECURE] {site}</span><br>
+                    <a href='{url}' target='_blank' style='color: #fff;'>└─ CLICK TO CHECK >></a>
+                </div>
+                """, unsafe_allow_html=True)
+            idx += 1
+
     else:
         st.warning("ERROR: INPUT PARAMETER MISSING.")
 
-# --- SIGNATURE FOOTER ---
-st.markdown("<div class='footer-sig'>// DEVELOPED BY TAKSVJ // V.3.0 //</div>", unsafe_allow_html=True)
+# --- SIGNATURE ---
+st.markdown("<br><br><div style='text-align: center; color: #00ff41; opacity: 0.7;'>// DEVELOPED BY TAKSVJ // V.4.0 //</div>", unsafe_allow_html=True)
