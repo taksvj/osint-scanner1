@@ -245,7 +245,7 @@ def check_username(username, loading_placeholder):
         <div class="dot"></div>
     </div>
     <div style="text-align:center; color: #f2d648; font-weight:bold; letter-spacing: 2px;">
-        EATING DATA PACKETS...
+        SEARCHING DATA PACKETS...
     </div>
     """
     
@@ -274,11 +274,11 @@ def check_username(username, loading_placeholder):
     return found_list, sites_manual
 
 # --- UI TAMPILAN UTAMA ---
-st.markdown("<div class='cyber-header'>NEON OSINT</div>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #05d9e8; letter-spacing: 2px;'>// PAC-MAN PROTOCOL ACTIVATED //</p>", unsafe_allow_html=True)
+st.markdown("<div class='cyber-header'>OSINT SCANNER</div>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #05d9e8; letter-spacing: 2px;'>//OS PROTOCOL ACTIVATED //</p>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
-target = st.text_input("", placeholder="INSERT COIN (USERNAME)")
+target = st.text_input("", placeholder="EXECUTE (USERNAME)")
 st.markdown("<br>", unsafe_allow_html=True)
 
 # Placeholder untuk animasi (Wadah Kosong)
@@ -322,7 +322,7 @@ if st.button("EXECUTE TRACE"):
             idx += 1
 
     else:
-        st.warning("PLEASE INSERT USERNAME TO PLAY.")
+        st.warning("INSERT USERNAME.")
 
 # --- FOOTER ---
-st.markdown(f"<div class='footer-sig'>HIGH SCORE BY <b>TAKSVJ</b> // GAME ON</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='footer-sig'>HIGH SCORE BY <b>TAKSVJ</b> // OVERRIDE</div>", unsafe_allow_html=True)
