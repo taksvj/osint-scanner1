@@ -200,8 +200,8 @@ def check_username(username):
 
 # --- TAMPILAN UTAMA ---
 st.title("SYSTEM // OVERRIDE")
-st.markdown("### >> OSINT TARGET SCANNER V.2.0")
-st.write("UNIT: taksvj | STATUS: CONNECTED_")
+st.markdown("### >> OSINT SCANNER V1.0")
+st.write("Dev : Taksvj | Status : Connected_")
 
 st.markdown("<br>", unsafe_allow_html=True) # Spasi
 
@@ -209,7 +209,7 @@ target = st.text_input("ENTER TARGET ID_ >", placeholder="username_here...")
 
 st.markdown("<br>", unsafe_allow_html=True) # Spasi
 
-if st.button(">> EXECUTE SCAN <<"):
+if st.button(">>  FORCE SCAN  <<"):
     if target:
         st.markdown("---")
         results = check_username(target)
@@ -222,7 +222,7 @@ if st.button(">> EXECUTE SCAN <<"):
                 with col1:
                     st.success(f"HIT CONFIRMED: [{site}]")
                 with col2:
-                     st.markdown(f"[>> ACCESS LINK <<]({url})")
+                     st.markdown(f"[ACCESS LINK]({url})")
             st.markdown("---")
             st.write(f">> TOTAL HITS: {len(results)}")
         else:
