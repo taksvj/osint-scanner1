@@ -1,169 +1,162 @@
 import streamlit as st
 import requests
 import time
+import random
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(
-    page_title="CYBER OSINT // SCANNER",
-    page_icon="💀",
+    page_title="CYBER OSINT // TARGET LOCKED",
+    page_icon="👁️",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# --- CSS HACKER STYLE V2 (ULTIMATE EDITION) ---
+# --- INJECT CSS & JAVASCRIPT ANIMATION ---
 st.markdown("""
 <style>
-    /* Import Font Keren ala Kodingan */
-    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap');
+    /* Import Font Hacker */
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
-    /* --- MAIN CONTAINER --- */
+    /* --- BASIC SETUP --- */
     .stApp {
-        background-color: #020202; /* Hitam pekat */
-        color: #0f0; /* Hijau Neon terminal */
-        font-family: 'Fira Code', 'Courier New', monospace;
-        /* Efek garis scan halus di background */
-        background-image: linear-gradient(rgba(0, 255, 0, 0.03) 1px, transparent 1px);
-        background-size: 100% 4px;
+        background-color: #050505;
+        color: #00ff41;
+        font-family: 'Share Tech Mono', monospace;
+        cursor: crosshair !important; /* Mouse jadi bidikan */
+        overflow-x: hidden;
     }
 
-    /* --- TYPOGRAPHY & GLOW --- */
-    /* Semua teks dikasih efek cahaya pendar */
-    h1, h2, h3, p, span, div, label {
-        text-shadow: 0 0 4px rgba(0, 255, 0, 0.6);
+    /* --- GLITCH TITLE EFFECT --- */
+    @keyframes glitch {
+        0% { transform: translate(0) }
+        20% { transform: translate(-2px, 2px) }
+        40% { transform: translate(-2px, -2px) }
+        60% { transform: translate(2px, 2px) }
+        80% { transform: translate(2px, -2px) }
+        100% { transform: translate(0) }
+    }
+    .glitch-text {
+        color: #00ff41;
+        font-size: 3em;
+        font-weight: bold;
+        text-align: center;
+        text-shadow: 2px 2px #ff00ff;
+        animation: glitch 1s infinite;
     }
 
-    /* Judul Utama dibikin warna Cyan biar kontras */
-    h1 {
-        color: #0ff !important; /* Cyan Neon */
-        text-shadow: 0 0 10px rgba(0, 255, 255, 0.8), 0 0 20px rgba(0, 255, 255, 0.4) !important;
-        text-transform: uppercase;
-        letter-spacing: 3px;
-        font-weight: 800;
-        border-bottom: 2px solid #0ff;
-        padding-bottom: 10px;
-    }
-
-    /* --- INPUT FIELD (KOTAK ISIAN) --- */
-    /* Mengubah kotak input biar kayak command prompt */
+    /* --- INPUT FIELDS --- */
     .stTextInput > div > div > input {
-        color: #0f0 !important;
         background-color: #000 !important;
-        border: 2px solid #0f0 !important;
-        box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2);
-        font-family: 'Fira Code', monospace;
-        border-radius: 0px; /* Biar kotak tajem */
+        color: #00ff41 !important;
+        border: 1px solid #00ff41 !important;
+        font-family: 'Share Tech Mono', monospace;
+        box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
     }
-    /* Saat diklik (fokus) warnanya berubah jadi Cyan */
     .stTextInput > div > div > input:focus {
-        border-color: #0ff !important;
-        box-shadow: 0 0 15px rgba(0, 255, 255, 0.5) !important;
-        color: #0ff !important;
-    }
-    /* Warna placeholder (teks bayangan) */
-    ::placeholder {
-        color: rgba(0, 255, 0, 0.4) !important;
+        box-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
+        border-color: #fff !important;
     }
 
-    /* --- TOMBOL (BUTTON) --- */
+    /* --- BUTTONS --- */
     .stButton > button {
         width: 100%;
-        background-color: #000;
-        color: #0f0;
-        border: 2px solid #0f0;
-        font-weight: bold;
+        background: transparent;
+        border: 2px solid #00ff41;
+        color: #00ff41;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 1.2em;
+        transition: 0.3s;
         text-transform: uppercase;
-        letter-spacing: 2px;
-        transition: all 0.3s ease;
-        box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
-        border-radius: 0px; /* Kotak tajem */
-        padding: 15px 0;
     }
-    /* Efek hover (saat mouse di atas tombol) */
     .stButton > button:hover {
-        background-color: #0f0;
+        background: #00ff41;
         color: #000;
-        box-shadow: 0 0 25px rgba(0, 255, 0, 1);
-        border-color: #0f0;
-        cursor: pointer;
-        font-weight: 900;
+        box-shadow: 0 0 20px #00ff41;
+        cursor: crosshair;
     }
 
-    /* --- HASIL SCAN (ALERT BOXES) --- */
-    /* Mengubah kotak 'success' default Streamlit jadi gelap */
+    /* --- RESULT BOXES --- */
     div[data-baseweb="notification"] {
-        background-color: rgba(0, 20, 0, 0.9) !important;
-        border-left: 5px solid #0f0 !important;
-        border-top: 1px solid #0f0 !important;
-        border-right: 1px solid #0f0 !important;
-        border-bottom: 1px solid #0f0 !important;
-        color: #0f0 !important;
-        border-radius: 0px;
+        background-color: rgba(0, 20, 0, 0.95) !important;
+        border: 1px solid #00ff41 !important;
+        border-left: 10px solid #00ff41 !important;
     }
-    /* Ikon centang di hasil */
-    div[data-baseweb="notification"] svg {
-        fill: #0f0 !important;
-        filter: drop-shadow(0 0 5px #0f0);
-    }
-    /* Link di dalam hasil */
-    div[data-baseweb="notification"] a {
-        color: #0ff !important;
-        text-decoration: none;
-        font-weight: bold;
-        border-bottom: 1px dotted #0ff;
-        margin-left: 10px;
-    }
-    div[data-baseweb="notification"] a:hover {
-        text-shadow: 0 0 10px #0ff;
-        border-bottom: 1px solid #0ff;
-    }
-
-    /* --- PROGRESS BAR --- */
-    .stProgress > div > div > div {
-        background-color: #0f0;
-        box-shadow: 0 0 10px #0f0, 0 0 20px #0f0;
+    a {
+        color: #fff !important;
+        text-decoration: underline;
     }
     
-    /* --- HIDE JUNK --- */
-    /* Menyembunyikan menu bawaan Streamlit biar bersih */
+    /* --- HIDE DEFAULT STREAMLIT UI --- */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-    
+
 </style>
+
+<script>
+document.addEventListener('mousemove', function(e) {
+    // Membuat elemen jejak
+    let trail = document.createElement('div');
+    trail.className = 'trail';
+    document.body.appendChild(trail);
+
+    // Posisi mengikuti mouse
+    trail.style.left = e.pageX + 'px';
+    trail.style.top = e.pageY + 'px';
+
+    // Random ukuran biar variatif
+    let size = Math.random() * 10 + 5; 
+    trail.style.width = size + 'px';
+    trail.style.height = size + 'px';
+
+    // Styling CSS langsung di JS biar nempel
+    trail.style.position = 'absolute';
+    trail.style.background = '#00ff41';
+    trail.style.borderRadius = '50%';
+    trail.style.pointerEvents = 'none';
+    trail.style.opacity = '0.8';
+    trail.style.zIndex = '9999';
+    trail.style.boxShadow = '0 0 10px #00ff41';
+    trail.style.transition = 'all 0.5s linear';
+
+    // Hilangkan elemen setelah 0.5 detik
+    setTimeout(function() {
+        trail.style.opacity = '0';
+        trail.style.transform = 'scale(0)';
+    }, 50);
+
+    setTimeout(function() {
+        trail.remove();
+    }, 500);
+});
+</script>
 """, unsafe_allow_html=True)
 
-# --- FUNGSI SCAN (Sama seperti sebelumnya) ---
+# --- LOGIKA PROGRAM ---
 def check_username(username):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    }
-
+    # Simulasi headers
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    
+    # Database situs
     sites = {
-        "Instagram": "https://www.instagram.com/{}",
-        "Facebook": "https://www.facebook.com/{}",
-        "Twitter/X": "https://twitter.com/{}",
-        "TikTok": "https://www.tiktok.com/@{}",
-        "Telegram": "https://t.me/{}",
-        "Pinterest": "https://www.pinterest.com/{}",
-        "GitHub": "https://github.com/{}",
-        "GitLab": "https://gitlab.com/{}",
-        "Spotify": "https://open.spotify.com/user/{}",
-        "SoundCloud": "https://soundcloud.com/{}",
-        "YouTube": "https://www.youtube.com/@{}",
-        "Wattpad": "https://www.wattpad.com/user/{}",
-        "Steam": "https://steamcommunity.com/id/{}",
-        "Roblox": "https://www.roblox.com/user.aspx?username={}",
-        "Linktree": "https://linktr.ee/{}",
-        "Freelancer": "https://www.freelancer.com/u/{}",
-        "Fiverr": "https://www.fiverr.com/{}",
+        "INSTAGRAM": "https://www.instagram.com/{}",
+        "TIKTOK": "https://www.tiktok.com/@{}",
+        "TWITTER/X": "https://twitter.com/{}",
+        "FACEBOOK": "https://www.facebook.com/{}",
+        "TELEGRAM": "https://t.me/{}",
+        "GITHUB": "https://github.com/{}",
+        "SPOTIFY": "https://open.spotify.com/user/{}",
+        "YOUTUBE": "https://www.youtube.com/@{}",
+        "WATTPAD": "https://www.wattpad.com/user/{}",
+        "ROBLOX": "https://www.roblox.com/user.aspx?username={}",
+        "STEAM": "https://steamcommunity.com/id/{}",
     }
 
     found_list = []
     
-    # Progress Bar Style Hacker
-    progress_text = "INITIALIZING SCAN PROTOCOL..."
+    # Progress Bar Hacker Style
+    progress_text = "INITIALIZING BRUTEFORCE PROTOCOL..."
     my_bar = st.progress(0, text=progress_text)
-    status_text = st.empty()
     
     total = len(sites)
     count = 0
@@ -172,64 +165,53 @@ def check_username(username):
         url = url_pattern.format(username)
         count += 1
         
-        # Update progress
-        prog_percent = count / total
-        my_bar.progress(prog_percent, text=f"SCANNING MODULE [{count}/{total}]: {site.upper()}...")
+        # Animasi text berubah-ubah saat loading
+        status_msg = f"SCANNING NODE [{site}]... {random.randint(10,99)}%"
+        my_bar.progress(count / total, text=status_msg)
         
         try:
-            response = requests.get(url, headers=headers, timeout=5)
-            
+            response = requests.get(url, headers=headers, timeout=3)
             if response.status_code == 200:
+                # Filter sederhana
                 page_text = response.text.lower()
-                not_found_indicators = ["page not found", "user not found", "not found", "404", "doesn't exist", "halaman tidak ditemukan"]
-                is_false_positive = any(indicator in page_text for indicator in not_found_indicators)
-                
-                if not is_false_positive:
+                if "not found" not in page_text and "404" not in page_text:
                     found_list.append((site, url))
-            
-        except Exception:
+        except:
             pass
-            
-        # Sedikit delay biar keliatan prosesnya (opsional)
-        # time.sleep(0.1)
+        
+        # Delay super cepat biar ada efek 'computing'
+        time.sleep(0.05)
 
-    my_bar.progress(1.0, text="SCAN COMPLETE. DATA RETRIEVED.")
-    time.sleep(1)
+    my_bar.progress(1.0, text="ACCESS GRANTED. DATA RETRIEVED.")
+    time.sleep(0.5)
     my_bar.empty()
     return found_list
 
 # --- TAMPILAN UTAMA ---
-st.title("SYSTEM // OVERRIDE")
-st.markdown("### >> OSINT SCANNER V1.0")
-st.write("Dev : Taksvj | Status : Connected_")
+st.markdown("<div class='glitch-text'>SYSTEM // OVERRIDE</div>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #fff; letter-spacing: 2px;'>[ TARGET IDENTIFICATION PROTOCOL ]</p>", unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True) # Spasi
+st.markdown("---")
 
-target = st.text_input("ENTER TARGET ID_ >", placeholder="username_here...")
+col1, col2, col3 = st.columns([1, 6, 1])
+with col2:
+    target = st.text_input("", placeholder="ENTER USERNAME_")
 
-st.markdown("<br>", unsafe_allow_html=True) # Spasi
-
-if st.button(">>  FORCE SCAN  <<"):
-    if target:
-        st.markdown("---")
-        results = check_username(target)
-        
-        st.markdown("### >> SCAN REPORT // RESULTS")
-        if results:
-            for site, url in results:
-                # Menggunakan layout kolom untuk hasil biar rapi
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    st.success(f"HIT CONFIRMED: [{site}]")
-                with col2:
-                     st.markdown(f"[ACCESS LINK]({url})")
-            st.markdown("---")
-            st.write(f">> TOTAL HITS: {len(results)}")
+    if st.button(">> INITIATE SEARCH <<"):
+        if target:
+            st.write(f">> CONNECTING TO SERVER... [TARGET: {target}]")
+            time.sleep(1) # Efek dramatis
+            results = check_username(target)
+            
+            st.markdown("### >> DATABASE MATCHES:")
+            if results:
+                for site, url in results:
+                    st.success(f"HIT FOUND: {site}")
+                    st.markdown(f"└─ [ACCESS DATA]({url})")
+            else:
+                st.error("NEGATIVE RESULT. TARGET IS GHOSTING.")
         else:
-            st.error("NEGATIVE RESULT. NO TRACE FOUND IN DATABASE.")
-    else:
-        st.warning("[!] ERROR: INPUT INVALID. TARGET ID REQUIRED.")
+            st.warning("ERROR: INPUT PARAMETER MISSING.")
 
-# Footer ala hacker
-st.markdown("<br><br><br>", unsafe_allow_html=True)
-st.markdown("<div style='text-align: center; color: #0f0; opacity: 0.5;'>--- END OF LINE ---</div>", unsafe_allow_html=True)
+# Footer
+st.markdown("<br><br><br><center style='color: #004400;'>SECURE CONNECTION ESTABLISHED<br>SESSION ID: X99-21</center>", unsafe_allow_html=True)
