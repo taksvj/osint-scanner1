@@ -5,28 +5,31 @@ import random
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(
-    page_title="CYBER OSINT // TARGET LOCKED",
-    page_icon="👁️",
+    page_title="CYBER OSINT // TAKSVJ",
+    page_icon="💀",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# --- INJECT CSS & JAVASCRIPT ANIMATION ---
+# --- MATRIKS RAIN ANIMATION & GLOBAL CSS ---
 st.markdown("""
 <style>
     /* Import Font Hacker */
     @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
-    /* --- BASIC SETUP --- */
-    .stApp {
-        background-color: #020202; /* Hitam lebih pekat */
-        color: #00ff41;
-        font-family: 'Share Tech Mono', monospace;
+    /* PAKSA CURSOR JADI CROSSHAIR UNTUK SEMUA ELEMEN */
+    * {
         cursor: crosshair !important;
-        overflow-x: hidden; /* Mencegah scrollbar samping saat animasi keluar layar */
     }
 
-    /* --- GLITCH TITLE EFFECT --- */
+    /* BACKGROUND UTAMA */
+    .stApp {
+        background-color: #000;
+        color: #00ff41;
+        font-family: 'Share Tech Mono', monospace;
+    }
+
+    /* TITLE GLITCH */
     @keyframes glitch {
         0% { transform: translate(0) }
         20% { transform: translate(-2px, 2px) }
@@ -35,135 +38,137 @@ st.markdown("""
         80% { transform: translate(2px, -2px) }
         100% { transform: translate(0) }
     }
-    .glitch-text {
+    .glitch-header {
         color: #00ff41;
-        font-size: 3em;
-        font-weight: bold;
+        font-size: 3.5rem;
+        font-weight: 800;
         text-align: center;
-        text-shadow: 2px 2px #ff00ff;
-        animation: glitch 1s infinite;
+        text-shadow: 2px 2px #003300;
+        animation: glitch 1.5s infinite;
         letter-spacing: 5px;
+        margin-bottom: 20px;
     }
 
-    /* --- INPUT FIELDS --- */
+    /* INPUT FIELD */
     .stTextInput > div > div > input {
-        background-color: #0a0a0a !important;
+        background-color: rgba(0, 20, 0, 0.8) !important;
         color: #00ff41 !important;
-        border: 1px solid #00ff41 !important;
+        border: 2px solid #00ff41 !important;
         font-family: 'Share Tech Mono', monospace;
-        box-shadow: inset 0 0 10px rgba(0, 255, 65, 0.1);
+        text-align: center;
+        font-size: 1.2rem;
+        z-index: 100; /* Biar di atas matrix rain */
     }
     .stTextInput > div > div > input:focus {
-        box-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
-        border-color: #fff !important;
+        box-shadow: 0 0 20px #00ff41;
         background-color: #000 !important;
     }
 
-    /* --- BUTTONS --- */
+    /* TOMBOL */
     .stButton > button {
-        width: 100%;
-        background: rgba(0, 255, 65, 0.1);
-        border: 1px solid #00ff41;
+        background: black;
+        border: 2px solid #00ff41;
         color: #00ff41;
         font-family: 'Share Tech Mono', monospace;
-        font-size: 1.2em;
-        transition: 0.3s;
+        font-size: 1.5rem;
         text-transform: uppercase;
-        letter-spacing: 3px;
+        padding: 10px;
+        transition: 0.3s;
+        z-index: 100;
     }
     .stButton > button:hover {
         background: #00ff41;
-        color: #000;
+        color: black;
         box-shadow: 0 0 30px #00ff41;
-        cursor: crosshair;
         font-weight: bold;
     }
 
-    /* --- RESULT BOXES --- */
+    /* HASIL SCAN */
     div[data-baseweb="notification"] {
-        background-color: rgba(0, 10, 0, 0.9) !important;
+        background-color: rgba(0, 0, 0, 0.9) !important;
         border: 1px solid #00ff41 !important;
-        border-left: 5px solid #00ff41 !important;
-        box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+        color: #00ff41 !important;
+        z-index: 100;
     }
-    a {
-        color: #fff !important;
-        text-decoration: none;
-        border-bottom: 1px dotted #00ff41;
-    }
-    a:hover {
-        text-shadow: 0 0 10px #ffffff;
-        border-bottom: 1px solid #ffffff;
-    }
-    
-    /* --- SIGNATURE FOOTER --- */
-    .signature-container {
+    a { color: #fff !important; text-decoration: none; border-bottom: 1px dotted #fff; }
+    a:hover { text-shadow: 0 0 10px #fff; }
+
+    /* CANVAS MATRIX RAIN (Ditaruh di belakang) */
+    #matrix-canvas {
         position: fixed;
+        top: 0;
         left: 0;
-        bottom: 20px;
+        width: 100vw;
+        height: 100vh;
+        z-index: -1; /* Di belakang konten */
+        opacity: 0.2; /* Transparan biar tulisan tetap terbaca */
+        pointer-events: none;
+    }
+
+    /* SIGNATURE */
+    .footer-sig {
+        position: fixed;
+        bottom: 10px;
         width: 100%;
         text-align: center;
-        pointer-events: none; /* Agar tidak mengganggu klik */
+        color: #00ff41;
+        font-family: 'Share Tech Mono', monospace;
+        opacity: 0.8;
+        font-size: 1rem;
+        pointer-events: none;
+        text-shadow: 0 0 10px #00ff41;
         z-index: 99;
     }
-    .signature-text {
-        font-family: 'Share Tech Mono', monospace;
-        color: #00ff41;
-        font-size: 1.2em;
-        letter-spacing: 4px;
-        text-transform: uppercase;
-        text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41, 0 0 40px #00ff41;
-        opacity: 0.7;
-    }
 
-    /* --- HIDE DEFAULT STREAMLIT UI --- */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-
+    /* SEMBUNYIKAN UI BAWAAN */
+    #MainMenu, footer, header {visibility: hidden;}
+    
 </style>
 
+<canvas id="matrix-canvas"></canvas>
 <script>
-document.addEventListener('mousemove', function(e) {
-    // Karakter biner acak
-    const binaryChars = ['0', '1'];
-    const char = binaryChars[Math.floor(Math.random() * binaryChars.length)];
+    const canvas = document.getElementById('matrix-canvas');
+    const ctx = canvas.getContext('2d');
 
-    // Membuat elemen span untuk karakter biner
-    let binaryDrop = document.createElement('span');
-    binaryDrop.innerText = char;
-    binaryDrop.className = 'binary-trail';
-    document.body.appendChild(binaryDrop);
+    // Set canvas full screen
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    // Posisi mengikuti mouse dengan sedikit variasi acak
-    let x = e.pageX + (Math.random() * 20 - 10);
-    let y = e.pageY;
-    
-    binaryDrop.style.left = x + 'px';
-    binaryDrop.style.top = y + 'px';
+    const katakana = '01'; // Bisa diganti '01' atau huruf jepang
+    const letters = katakana.split('');
 
-    // Styling CSS langsung di JS
-    binaryDrop.style.position = 'absolute';
-    binaryDrop.style.color = '#00ff41';
-    binaryDrop.style.fontSize = (Math.random() * 10 + 12) + 'px'; // Ukuran acak
-    binaryDrop.style.fontFamily = 'Share Tech Mono, monospace';
-    binaryDrop.style.pointerEvents = 'none';
-    binaryDrop.style.zIndex = '9998';
-    binaryDrop.style.textShadow = '0 0 5px #00ff41';
-    binaryDrop.style.opacity = '1';
-    binaryDrop.style.transition = 'all 1s ease-out'; // Animasi jatuh dan pudar
+    const fontSize = 16;
+    const columns = canvas.width / fontSize;
 
-    // Animasi jatuh ke bawah dan menghilang
-    setTimeout(function() {
-        binaryDrop.style.top = (y + 100) + 'px'; // Jatuh 100px ke bawah
-        binaryDrop.style.opacity = '0';
-    }, 50);
+    const drops = [];
+    for(let x = 0; x < columns; x++) {
+        drops[x] = 1;
+    }
 
-    // Hapus elemen setelah animasi selesai
-    setTimeout(function() {
-        binaryDrop.remove();
-    }, 1000);
-});
+    function draw() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; // Efek trail pudar
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#0F0'; // Warna teks hijau
+        ctx.font = fontSize + 'px monospace';
+
+        for(let i = 0; i < drops.length; i++) {
+            const text = letters[Math.floor(Math.random() * letters.length)];
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+            if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+            drops[i]++;
+        }
+    }
+    setInterval(draw, 33); // Kecepatan animasi
+
+    // Resize handling
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
 </script>
 """, unsafe_allow_html=True)
 
@@ -186,8 +191,8 @@ def check_username(username):
 
     found_list = []
     
-    # Progress Bar (Teks lebih bersih tanpa panah)
-    progress_text = "INITIALIZING BRUTEFORCE PROTOCOL..."
+    # Progress Bar Custom
+    progress_text = "INITIALIZING BRUTEFORCE..."
     my_bar = st.progress(0, text=progress_text)
     
     total = len(sites)
@@ -197,11 +202,11 @@ def check_username(username):
         url = url_pattern.format(username)
         count += 1
         
-        status_msg = f"SCANNING NODE [{site}]... {random.randint(10,99)}%"
+        status_msg = f"SCANNING NODE: {site}... {random.randint(10,99)}%"
         my_bar.progress(count / total, text=status_msg)
         
         try:
-            response = requests.get(url, headers=headers, timeout=3)
+            response = requests.get(url, headers=headers, timeout=2)
             if response.status_code == 200:
                 page_text = response.text.lower()
                 if "not found" not in page_text and "404" not in page_text:
@@ -211,42 +216,38 @@ def check_username(username):
         
         time.sleep(0.05)
 
-    my_bar.progress(1.0, text="ACCESS GRANTED. DATA RETRIEVED.")
+    my_bar.progress(1.0, text="SCAN COMPLETE.")
     time.sleep(0.5)
     my_bar.empty()
     return found_list
 
 # --- TAMPILAN UTAMA ---
-st.markdown("<div class='glitch-text'>SYSTEM OVERRIDE</div>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #fff; letter-spacing: 3px; opacity: 0.7;'>[ TARGET IDENTIFICATION PROTOCOL ]</p>", unsafe_allow_html=True)
+st.markdown("<div class='glitch-header'>SYSTEM OVERRIDE</div>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #fff; letter-spacing: 3px; background: rgba(0,0,0,0.5); padding: 5px;'>[ TARGET IDENTIFICATION PROTOCOL ]</p>", unsafe_allow_html=True)
 
-st.markdown("---")
+st.markdown("<br>", unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns([1, 6, 1])
-with col2:
-    target = st.text_input("", placeholder="ENTER USERNAME")
+# Layout Input
+target = st.text_input("", placeholder="ENTER USERNAME HERE")
 
-    # Tombol bersih tanpa panah
-    if st.button("[ INITIATE SEARCH ]"):
-        if target:
-            st.write(f"CONNECTING TO SERVER... [TARGET: {target}]")
-            time.sleep(1)
-            results = check_username(target)
-            
-            # Judul hasil bersih tanpa panah
-            st.markdown("### DATABASE MATCHES:")
-            if results:
-                for site, url in results:
-                    st.success(f"HIT FOUND: {site}")
-                    st.markdown(f"└─ [ACCESS DATA]({url})")
-            else:
-                st.error("NEGATIVE RESULT. TARGET IS GHOSTING.")
+st.markdown("<br>", unsafe_allow_html=True)
+
+if st.button("INITIATE SEARCH"):
+    if target:
+        st.write(f"CONNECTING TO SERVER... [TARGET: {target}]")
+        time.sleep(1)
+        results = check_username(target)
+        
+        st.markdown("---")
+        st.markdown("### DATABASE MATCHES:")
+        if results:
+            for site, url in results:
+                st.success(f"HIT FOUND: {site}")
+                st.markdown(f"└─ [ACCESS DATA]({url})")
         else:
-            st.warning("ERROR: INPUT PARAMETER MISSING.")
+            st.error("NEGATIVE RESULT. TARGET IS GHOSTING.")
+    else:
+        st.warning("ERROR: INPUT PARAMETER MISSING.")
 
-# --- SIGNATURE FOOTER (Bagian Bawah) ---
-st.markdown("""
-<div class='signature-container'>
-    <div class='signature-text'>// DEVELOPED BY TAKSVJ //</div>
-</div>
-""", unsafe_allow_html=True)
+# --- SIGNATURE FOOTER ---
+st.markdown("<div class='footer-sig'>// DEVELOPED BY TAKSVJ // V.3.0 //</div>", unsafe_allow_html=True)
