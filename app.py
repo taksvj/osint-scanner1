@@ -1,4 +1,3 @@
-# This content is from cell jvPBWIb-PPoq
 import streamlit as st
 import requests
 import time
