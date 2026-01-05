@@ -4,3 +4,4 @@ python-whois
 dnspython
 instaloader
 Faker
+Pillow
