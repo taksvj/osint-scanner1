@@ -4,7 +4,7 @@ import time
 import socket
 import whois
 import dns.resolver
-import instaloader # Library baru buat IG
+import instaloader
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(
@@ -159,7 +159,7 @@ def run_domain_recon():
             st.markdown(f"<div class='terminal-line'><span class='bracket'>[</span><span class='warn'> WHOIS </span><span class='bracket'>]</span> Registrar: <span style='color:#d3dae3'>{w.registrar}</span></div>", unsafe_allow_html=True)
         except: pass
 
-# --- MODULE 3: INSTAGRAM RECON (BARU) ---
+# --- MODULE 3: INSTAGRAM RECON (FIXED) ---
 def run_instagram_recon():
     st.markdown("""
     <div style="font-family: 'Fira Code'; color: #b16286; margin-bottom: 10px;">
@@ -174,60 +174,57 @@ def run_instagram_recon():
     if run and username:
         st.markdown(f"<div style='color:#777; margin-bottom:10px;'>:: Connecting to Instagram Gateway for <b>{username}</b>...</div>", unsafe_allow_html=True)
         
-        # Bikin Instance Instaloader
         L = instaloader.Instaloader()
         
         try:
-            # Tarik Data Profil
             profile = instaloader.Profile.from_username(L.context, username)
             
-            # Tampilkan Data
-            st.markdown(f"""
-            <div style="border: 1px solid #b16286; padding: 20px; margin-top: 10px;">
-                <h3 style="color: #b16286; margin:0;">@{profile.username}</h3>
-                <div style="color: #777; font-size: 0.9em; margin-bottom: 15px;">User ID: {profile.userid}</div>
-                
-                <div style="display: flex; gap: 30px;">
-                    <div>
-                        <div style="color: #d3dae3; font-size: 1.5em; font-weight: bold;">{profile.mediacount}</div>
-                        <div style="color: #b16286;">Posts</div>
-                    </div>
-                    <div>
-                        <div style="color: #d3dae3; font-size: 1.5em; font-weight: bold;">{profile.followers}</div>
-                        <div style="color: #b16286;">Followers</div>
-                    </div>
-                    <div>
-                        <div style="color: #d3dae3; font-size: 1.5em; font-weight: bold;">{profile.followees}</div>
-                        <div style="color: #b16286;">Following</div>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 15px; border-top: 1px dashed #333; padding-top: 10px;">
-                    <span style="color: #b16286;">Bio:</span> <span style="color: #aaa;">{profile.biography}</span>
-                </div>
-                <div style="margin-top: 5px;">
-                     <span style="color: #b16286;">Verified:</span> <span style="color: { '#23d18b' if profile.is_verified else '#fa5c5c' }">{str(profile.is_verified)}</span> | 
-                     <span style="color: #b16286;">Private:</span> <span style="color: { '#fa5c5c' if profile.is_private else '#23d18b' }">{str(profile.is_private)}</span>
-                </div>
-                <div style="margin-top: 5px;">
-                     <span style="color: #b16286;">External URL:</span> <a href="{profile.external_url}" target="_blank">{profile.external_url}</a>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+            # [FIXED] HTML String Rata Kiri biar gak dideteksi sebagai Code Block
+            html_content = f"""
+<div style="border: 1px solid #b16286; padding: 20px; margin-top: 10px;">
+<h3 style="color: #b16286; margin:0;">@{profile.username}</h3>
+<div style="color: #777; font-size: 0.9em; margin-bottom: 15px;">User ID: {profile.userid}</div>
+<div style="display: flex; gap: 30px;">
+<div>
+<div style="color: #d3dae3; font-size: 1.5em; font-weight: bold;">{profile.mediacount}</div>
+<div style="color: #b16286;">Posts</div>
+</div>
+<div>
+<div style="color: #d3dae3; font-size: 1.5em; font-weight: bold;">{profile.followers}</div>
+<div style="color: #b16286;">Followers</div>
+</div>
+<div>
+<div style="color: #d3dae3; font-size: 1.5em; font-weight: bold;">{profile.followees}</div>
+<div style="color: #b16286;">Following</div>
+</div>
+</div>
+<div style="margin-top: 15px; border-top: 1px dashed #333; padding-top: 10px;">
+<span style="color: #b16286;">Bio:</span> <span style="color: #aaa;">{profile.biography}</span>
+</div>
+<div style="margin-top: 5px;">
+<span style="color: #b16286;">Verified:</span> <span style="color: {'#23d18b' if profile.is_verified else '#fa5c5c'}">{str(profile.is_verified)}</span> | 
+<span style="color: #b16286;">Private:</span> <span style="color: {'#fa5c5c' if profile.is_private else '#23d18b'}">{str(profile.is_private)}</span>
+</div>
+<div style="margin-top: 5px;">
+<span style="color: #b16286;">External URL:</span> <a href="{profile.external_url}" target="_blank">{profile.external_url}</a>
+</div>
+</div>
+"""
+            st.markdown(html_content, unsafe_allow_html=True)
 
-            # Download Profile Pic (Opsional, kadang bikin lemot)
+            # Link Gambar (Opsional)
             st.markdown(f"<br><div class='terminal-line'><span class='bracket'>[</span><span class='ig'> IMG </span><span class='bracket'>]</span> Profile Picture URL: <a href='{profile.profile_pic_url}' target='_blank'>Click to view</a></div>", unsafe_allow_html=True)
 
         except Exception as e:
             error_msg = str(e)
             if "LoginRequired" in error_msg:
-                st.error("FATAL ERROR: Instagram memblokir akses publik (Login Required). Coba lagi nanti atau gunakan IP lokal.")
+                st.error("FATAL ERROR: Login Required. IP Server ini mungkin diblokir Instagram.")
             elif "ConnectionRefused" in error_msg or "429" in error_msg:
-                st.error("FATAL ERROR: Terlalu banyak request (IP Blocked). Instagram mendeteksi bot.")
+                st.error("FATAL ERROR: 429 Too Many Requests (IP Blocked).")
             elif "ProfileNotExists" in error_msg:
                 st.warning(f"User '{username}' tidak ditemukan.")
             else:
-                st.error(f"Error tidak dikenal: {error_msg}")
+                st.error(f"Error: {error_msg}")
 
 # --- MAIN LAYOUT & SIDEBAR ---
 with st.sidebar:
@@ -237,7 +234,7 @@ with st.sidebar:
         ["User Recon", "Domain Recon", "Instagram Recon"],
         label_visibility="collapsed"
     )
-    st.markdown("<br><div style='text-align:center; color:#555; font-size:0.8em;'>v3.0-nightly</div>", unsafe_allow_html=True)
+    st.markdown("<br><div style='text-align:center; color:#555; font-size:0.8em;'>v3.1-stable</div>", unsafe_allow_html=True)
 
 # HEADER NEOFETCH
 st.markdown(r"""
