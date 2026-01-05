@@ -5,7 +5,9 @@ import socket
 import whois
 import dns.resolver
 import instaloader
-import re # Library Regex buat nyari pola IP
+import re
+import phonenumbers
+from phonenumbers import geocoder, carrier, timezone
 from faker import Faker
 from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
@@ -36,6 +38,7 @@ st.markdown("""
         --term-orange: #fe8019;
         --term-gray: #928374;
         --term-white: #ebdbb2;
+        --term-pink: #d3869b;
     }
 
     .stApp {
@@ -93,6 +96,7 @@ st.markdown("""
     .exif { color: var(--term-orange); font-weight: bold; }
     .geo { color: var(--term-gray); font-weight: bold; }
     .net { color: var(--term-white); font-weight: bold; }
+    .num { color: var(--term-pink); font-weight: bold; }
     
     a { color: var(--arch-blue) !important; text-decoration: none; border-bottom: 1px dotted #333; }
     
@@ -218,67 +222,104 @@ def run_geo_spy():
                     st.map(data={'lat': [location.latitude], 'lon': [location.longitude]})
             except: pass
 
-# --- MODULE 7: NET STALKER (NEW) ---
 def run_net_stalker():
+    st.markdown("""<div style="font-family: 'Fira Code'; color: #ebdbb2; margin-bottom: 10px;">[taksvj@archlinux ~]$ <span style="color: #d3dae3;">grep -E "([0-9]{1,3}\.){3}[0-9]{1,3}" email_header.txt</span></div>""", unsafe_allow_html=True)
+    header_text = st.text_area("", placeholder="Paste Raw Email Header here...", height=200)
+    run = st.button("ANALYZE HEADER")
+    if run and header_text:
+        ips = re.findall(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', header_text)
+        public_ips = []
+        for ip in ips:
+            if not (ip.startswith('127.') or ip.startswith('192.168.') or ip.startswith('10.')):
+                if ip not in public_ips: public_ips.append(ip)
+        if public_ips:
+            st.markdown(f"<br><div class='terminal-line'><span class='plus'> SUCCESS </span> Found {len(public_ips)} Potential Public IPs</div>", unsafe_allow_html=True)
+            for ip in public_ips:
+                try:
+                    r = requests.get(f"http://ip-api.com/json/{ip}").json()
+                    st.markdown(f"<div style='border:1px solid #ebdbb2; padding:10px; margin-top:10px;'>IP: {ip} | LOC: {r['city']}, {r['country']} ({r['isp']})</div>", unsafe_allow_html=True)
+                except: pass
+
+# --- MODULE 8: NUM SEEKER (NEW) ---
+def run_num_seeker():
     st.markdown("""
-    <div style="font-family: 'Fira Code'; color: #ebdbb2; margin-bottom: 10px;">
-        [taksvj@archlinux ~]$ <span style="color: #d3dae3;">grep -E "([0-9]{1,3}\.){3}[0-9]{1,3}" email_header.txt</span>
+    <div style="font-family: 'Fira Code'; color: #d3869b; margin-bottom: 10px;">
+        [taksvj@archlinux ~]$ <span style="color: #d3dae3;">./num_seeker -v target_phone</span>
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("<div style='color:#777; margin-bottom:5px;'>:: Analyze raw email headers to extract sender's Origin IP.</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#777; margin-bottom:5px;'>:: Analyze Phone Number (Carrier, Location, WA). Use Int'l Format (e.g. +6281...)</div>", unsafe_allow_html=True)
     
-    header_text = st.text_area("", placeholder="Paste Raw Email Header here...", height=200)
-    run = st.button("ANALYZE HEADER")
+    c1, c2 = st.columns([5, 1])
+    phone_input = c1.text_input("", placeholder="+628123456789...", label_visibility="collapsed")
+    run = c2.button("TRACK NUM")
     
-    if run and header_text:
-        # Regex buat nyari IP Address (IPv4)
-        ips = re.findall(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', header_text)
-        
-        # Filter IP Lokal/Private biar gak menuh-menuhin (127.0.0.1, 192.168..., 10...)
-        public_ips = []
-        for ip in ips:
-            if not (ip.startswith('127.') or ip.startswith('192.168.') or ip.startswith('10.') or ip.startswith('172.')):
-                if ip not in public_ips: # Hapus duplikat
-                    public_ips.append(ip)
-        
-        if public_ips:
-            st.markdown(f"<br><div class='terminal-line'><span class='plus'> SUCCESS </span> Found {len(public_ips)} Potential Public IPs</div>", unsafe_allow_html=True)
+    if run and phone_input:
+        try:
+            # Parse Number
+            parsed_num = phonenumbers.parse(phone_input, None)
             
-            for ip in public_ips:
-                # Langsung cek lokasi tiap IP yang ketemu
-                try:
-                    r = requests.get(f"http://ip-api.com/json/{ip}").json()
-                    status = "UNKNOWN"
-                    loc = "Unknown Location"
-                    
-                    if r['status'] == 'success':
-                        status = "ACTIVE"
-                        loc = f"{r['city']}, {r['country']} ({r['isp']})"
-                    
-                    st.markdown(f"""
-                    <div style="border: 1px solid #ebdbb2; padding: 10px; margin-top: 10px; background: rgba(235, 219, 178, 0.05);">
-                        <div style="display:flex; justify-content:space-between;">
-                            <span style="color:#fe8019; font-weight:bold;">{ip}</span>
-                            <span style="color:#23d18b;">[{status}]</span>
-                        </div>
-                        <div style="color:#d3dae3; font-size:0.9em;">{loc}</div>
+            # Cek Validitas
+            is_valid = phonenumbers.is_valid_number(parsed_num)
+            is_possible = phonenumbers.is_possible_number(parsed_num)
+            
+            if is_valid:
+                # Ambil Data
+                country = geocoder.description_for_number(parsed_num, "en")
+                provider = carrier.name_for_number(parsed_num, "en")
+                time_zones = timezone.time_zones_for_number(parsed_num)
+                formatted_intl = phonenumbers.format_number(parsed_num, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+                
+                # Buat Link WhatsApp (Tanpa Save Nomor)
+                # Kita hapus tanda '+' dan spasi buat link WA
+                wa_clean = str(parsed_num.country_code) + str(parsed_num.national_number)
+                wa_link = f"https://wa.me/{wa_clean}"
+                
+                st.markdown(f"""
+                <div style="border: 1px solid #d3869b; padding: 15px; background: rgba(211, 134, 155, 0.1); margin-top: 15px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:#d3dae3; font-size: 1.2em; font-weight:bold;">{formatted_intl}</span>
+                        <span style="color:#23d18b; font-weight:bold;">[ VALID ]</span>
                     </div>
-                    """, unsafe_allow_html=True)
-                except:
-                    pass
-        else:
-            st.warning("No public IP addresses found in the header text.")
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+                        <div>
+                            <div style="color:#777; font-size:0.8em;">COUNTRY / REGION</div>
+                            <div style="color:#d3869b;">{country}</div>
+                        </div>
+                        <div>
+                            <div style="color:#777; font-size:0.8em;">CARRIER (PROVIDER)</div>
+                            <div style="color:#d3dae3;">{provider}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 10px;">
+                        <div style="color:#777; font-size:0.8em;">TIMEZONE</div>
+                        <div style="color:#d3dae3;">{', '.join(time_zones)}</div>
+                    </div>
+                    
+                    <div style="margin-top: 20px; border-top: 1px dashed #555; padding-top: 10px;">
+                        <span style="color:#23d18b;">WHATSAPP RECON:</span> 
+                        <a href="{wa_link}" target="_blank" style="color:#d3869b; border-bottom:1px dotted #d3869b;">[ OPEN DIRECT CHAT ]</a>
+                        <br><span style="color:#777; font-size:0.8em;">*Click to view Profile Picture without saving contact.</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.error("Invalid Phone Number. Make sure to use Country Code (e.g., +62).")
+                
+        except Exception as e:
+            st.error(f"Error Parsing: {e}. Please use format +628...")
 
 # --- MAIN LAYOUT & SIDEBAR ---
 with st.sidebar:
     st.markdown("<h2 style='color:#1793d1; text-align:center;'>// TOOLKIT</h2>", unsafe_allow_html=True)
     selected_tool = st.radio(
         "Select Operation:",
-        ["User Recon", "Domain Recon", "Instagram Recon", "Persona Forge", "Exif Probe", "Geo Spy", "Net Stalker"],
+        ["User Recon", "Domain Recon", "Instagram Recon", "Persona Forge", "Exif Probe", "Geo Spy", "Net Stalker", "Num Seeker"],
         label_visibility="collapsed"
     )
-    st.markdown("<br><div style='text-align:center; color:#555; font-size:0.8em;'>v7.0-stealth</div>", unsafe_allow_html=True)
+    st.markdown("<br><div style='text-align:center; color:#555; font-size:0.8em;'>v8.0-unlimited</div>", unsafe_allow_html=True)
 
 # HEADER NEOFETCH
 st.markdown(r"""
@@ -311,5 +352,6 @@ elif selected_tool == "Persona Forge": run_persona_forge()
 elif selected_tool == "Exif Probe": run_exif_probe()
 elif selected_tool == "Geo Spy": run_geo_spy()
 elif selected_tool == "Net Stalker": run_net_stalker()
+elif selected_tool == "Num Seeker": run_num_seeker()
 
 st.markdown("""<br><div style="border-top: 1px dashed #333; padding-top: 10px; color: #555; font-size: 0.8em; text-align: right;">[ system ready ] :: execute with caution</div>""", unsafe_allow_html=True)
