@@ -6,6 +6,8 @@ import whois
 import dns.resolver
 import instaloader
 from faker import Faker
+from PIL import Image
+from PIL.ExifTags import TAGS, GPSTAGS
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(
@@ -29,6 +31,7 @@ st.markdown("""
         --term-yellow: #f2d648;
         --term-purple: #b16286;
         --term-cyan: #8ec07c;
+        --term-orange: #fe8019;
     }
 
     .stApp {
@@ -68,6 +71,13 @@ st.markdown("""
         border-color: var(--arch-blue);
         color: var(--arch-blue);
     }
+    
+    /* File Uploader Style */
+    [data-testid="stFileUploader"] {
+        border: 1px dashed #444;
+        padding: 20px;
+        border-radius: 5px;
+    }
 
     .terminal-line { margin-bottom: 5px; border-bottom: 1px solid #1a1a1a; padding-bottom: 2px; }
     .bracket { color: #555; font-weight: bold; }
@@ -77,6 +87,7 @@ st.markdown("""
     .info { color: var(--arch-blue); font-weight: bold; }
     .ig { color: var(--term-purple); font-weight: bold; }
     .id { color: var(--term-cyan); font-weight: bold; }
+    .exif { color: var(--term-orange); font-weight: bold; }
     
     a { color: var(--arch-blue) !important; text-decoration: none; border-bottom: 1px dotted #333; }
     
@@ -90,7 +101,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- FUNGSI PROGRESS BAR ---
+# --- FUNGSI HELPER GPS ---
+def get_decimal_from_dms(dms, ref):
+    degrees = dms[0]
+    minutes = dms[1]
+    seconds = dms[2]
+    decimal = degrees + (minutes / 60.0) + (seconds / 3600.0)
+    if ref in ['S', 'W']:
+        decimal = -decimal
+    return decimal
+
 def render_terminal_progress(placeholder, percent, task_name):
     bar_len = 20
     filled = int(bar_len * percent // 100)
@@ -185,22 +205,15 @@ def run_instagram_recon():
         except Exception as e:
             st.error(f"Error: {e}")
 
-# --- MODULE 4: PERSONA FORGE (FIXED) ---
+# --- MODULE 4: PERSONA FORGE ---
 def run_persona_forge():
-    st.markdown("""
-    <div style="font-family: 'Fira Code'; color: #8ec07c; margin-bottom: 10px;">
-        [taksvj@archlinux ~]$ <span style="color: #d3dae3;">python forge_identity.py --locale en_US</span>
-    </div>
-    """, unsafe_allow_html=True)
-
+    st.markdown("""<div style="font-family: 'Fira Code'; color: #8ec07c; margin-bottom: 10px;">[taksvj@archlinux ~]$ <span style="color: #d3dae3;">python forge_identity.py --locale en_US</span></div>""", unsafe_allow_html=True)
     c1, c2 = st.columns([3, 1])
     locale = c1.selectbox("Select Region", ["en_US", "id_ID", "ja_JP", "ru_RU", "de_DE"], label_visibility="collapsed")
     run = c2.button("GENERATE ID")
 
     if run:
         fake = Faker(locale)
-        
-        # Generate Data
         name = fake.name()
         addr = fake.address().replace('\n', ', ')
         job = fake.job()
@@ -209,7 +222,6 @@ def run_persona_forge():
         ipv4 = fake.ipv4()
         credit_card = fake.credit_card_number()
         
-        # [FIXED] HTML RATA KIRI (NO INDENTATION)
         html_code = f"""
 <div style="border: 1px solid #8ec07c; padding: 20px; margin-top: 10px; background: rgba(0,20,0,0.2);">
 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed #444; padding-bottom: 10px;">
@@ -217,51 +229,103 @@ def run_persona_forge():
 <span style="color: #555; font-size: 0.8em;">[ VERIFIED ]</span>
 </div>
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
-<div>
-<div style="color: #666; font-size: 0.8em;">FULL NAME</div>
-<div style="color: #d3dae3; font-size: 1.2em; font-weight: bold;">{name}</div>
+<div><div style="color: #666; font-size: 0.8em;">FULL NAME</div><div style="color: #d3dae3; font-size: 1.2em; font-weight: bold;">{name}</div></div>
+<div><div style="color: #666; font-size: 0.8em;">OCCUPATION</div><div style="color: #d3dae3;">{job}</div></div>
 </div>
-<div>
-<div style="color: #666; font-size: 0.8em;">OCCUPATION</div>
-<div style="color: #d3dae3;">{job}</div>
-</div>
-</div>
-<div style="margin-top: 15px;">
-<div style="color: #666; font-size: 0.8em;">ADDRESS</div>
-<div style="color: #d3dae3;">{addr}</div>
-</div>
+<div style="margin-top: 15px;"><div style="color: #666; font-size: 0.8em;">ADDRESS</div><div style="color: #d3dae3;">{addr}</div></div>
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
-<div>
-<div style="color: #666; font-size: 0.8em;">EMAIL</div>
-<div style="color: #8ec07c;">{email}</div>
-</div>
-<div>
-<div style="color: #666; font-size: 0.8em;">IP SPOOF</div>
-<div style="color: #fa5c5c;">{ipv4}</div>
-</div>
+<div><div style="color: #666; font-size: 0.8em;">EMAIL</div><div style="color: #8ec07c;">{email}</div></div>
+<div><div style="color: #666; font-size: 0.8em;">IP SPOOF</div><div style="color: #fa5c5c;">{ipv4}</div></div>
 </div>
 <div style="margin-top: 15px; border-top: 1px dashed #333; padding-top: 10px;">
-<div style="color: #666; font-size: 0.8em;">USER AGENT</div>
-<div style="color: #aaa; font-size: 0.8em; font-family: monospace;">{ua}</div>
+<div style="color: #666; font-size: 0.8em;">USER AGENT</div><div style="color: #aaa; font-size: 0.8em; font-family: monospace;">{ua}</div>
 </div>
 <div style="margin-top: 10px;">
-<div style="color: #666; font-size: 0.8em;">CREDIT CARD (FAKE)</div>
-<div style="color: #d3dae3; font-family: monospace;">{credit_card}</div>
+<div style="color: #666; font-size: 0.8em;">CREDIT CARD (FAKE)</div><div style="color: #d3dae3; font-family: monospace;">{credit_card}</div>
 </div>
 </div>
 """
         st.markdown(html_code, unsafe_allow_html=True)
-        st.markdown("<br><div class='terminal-line'><span class='plus'>SUCCESS</span> Identity saved to memory buffer.</div>", unsafe_allow_html=True)
+
+# --- MODULE 5: EXIF PROBE (NEW) ---
+def run_exif_probe():
+    st.markdown("""
+    <div style="font-family: 'Fira Code'; color: #fe8019; margin-bottom: 10px;">
+        [taksvj@archlinux ~]$ <span style="color: #d3dae3;">exiftool -all target_image.jpg</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<div style='color:#777; font-size:0.9em; margin-bottom:15px;'>:: Upload image to extract metadata, camera info, and GPS coordinates.</div>", unsafe_allow_html=True)
+
+    uploaded_file = st.file_uploader("", type=['jpg', 'jpeg', 'png', 'tiff'], label_visibility="collapsed")
+
+    if uploaded_file is not None:
+        try:
+            image = Image.open(uploaded_file)
+            exifdata = image._getexif()
+            
+            st.markdown(f"<br><div class='terminal-line'><span class='bracket'>[</span><span class='plus'> OK </span><span class='bracket'>]</span> Image Loaded: <span style='color:#d3dae3'>{uploaded_file.name}</span> ({image.format}, {image.size})</div>", unsafe_allow_html=True)
+
+            if not exifdata:
+                st.markdown("<div class='terminal-line'><span class='minus'>ERR</span> No EXIF metadata found in this image.</div>", unsafe_allow_html=True)
+            else:
+                st.markdown("<br><div style='color:#fe8019; border-bottom:1px dashed #444;'>// METADATA EXTRACTED</div>", unsafe_allow_html=True)
+                
+                # Parsing EXIF
+                metadata = {}
+                for tag_id in exifdata:
+                    tag = TAGS.get(tag_id, tag_id)
+                    data = exifdata.get(tag_id)
+                    if isinstance(data, bytes):
+                        try: data = data.decode()
+                        except: data = "[Binary Data]"
+                    metadata[tag] = data
+                
+                # Tampilkan Data Penting
+                important_tags = ['Make', 'Model', 'DateTime', 'Software', 'LensModel']
+                for key in important_tags:
+                    if key in metadata:
+                        st.markdown(f"<div class='terminal-line'><span class='bracket'>[</span><span class='exif'> DAT </span><span class='bracket'>]</span> {key}: <span style='color:#d3dae3'>{metadata[key]}</span></div>", unsafe_allow_html=True)
+
+                # Parsing GPS
+                if 'GPSInfo' in metadata:
+                    gps_info = metadata['GPSInfo']
+                    geo_data = {}
+                    for key in gps_info.keys():
+                        decode = GPSTAGS.get(key, key)
+                        geo_data[decode] = gps_info[key]
+                    
+                    if 'GPSLatitude' in geo_data and 'GPSLongitude' in geo_data:
+                        lat = get_decimal_from_dms(geo_data['GPSLatitude'], geo_data['GPSLatitudeRef'])
+                        lon = get_decimal_from_dms(geo_data['GPSLongitude'], geo_data['GPSLongitudeRef'])
+                        
+                        st.markdown(f"""
+                        <div style="margin-top:20px; border: 1px solid #fe8019; padding: 15px; background: rgba(254, 128, 25, 0.1);">
+                            <h4 style="color:#fe8019; margin:0;">🎯 GPS COORDINATES FOUND</h4>
+                            <div style="color:#d3dae3; margin-top:5px;">Latitude: {lat}</div>
+                            <div style="color:#d3dae3;">Longitude: {lon}</div>
+                            <div style="margin-top:10px;">
+                                <a href="https://www.google.com/maps?q={lat},{lon}" target="_blank" style="color:#fe8019; border-bottom:1px dotted #fe8019;">[ OPEN IN GOOGLE MAPS ]</a>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.markdown("<div class='terminal-line'><span class='warn'>WARN</span> GPS Tags found but incomplete.</div>", unsafe_allow_html=True)
+                else:
+                    st.markdown("<div class='terminal-line'><span class='warn'>WARN</span> No GPS data in this image.</div>", unsafe_allow_html=True)
+                    
+        except Exception as e:
+            st.error(f"Error reading image: {e}")
 
 # --- MAIN LAYOUT & SIDEBAR ---
 with st.sidebar:
     st.markdown("<h2 style='color:#1793d1; text-align:center;'>// TOOLKIT</h2>", unsafe_allow_html=True)
     selected_tool = st.radio(
         "Select Operation:",
-        ["User Recon", "Domain Recon", "Instagram Recon", "Persona Forge"],
+        ["User Recon", "Domain Recon", "Instagram Recon", "Persona Forge", "Exif Probe"],
         label_visibility="collapsed"
     )
-    st.markdown("<br><div style='text-align:center; color:#555; font-size:0.8em;'>v4.1-stable</div>", unsafe_allow_html=True)
+    st.markdown("<br><div style='text-align:center; color:#555; font-size:0.8em;'>v5.0-fullstack</div>", unsafe_allow_html=True)
 
 # HEADER NEOFETCH
 st.markdown(r"""
@@ -295,6 +359,8 @@ elif selected_tool == "Instagram Recon":
     run_instagram_recon()
 elif selected_tool == "Persona Forge":
     run_persona_forge()
+elif selected_tool == "Exif Probe":
+    run_exif_probe()
 
 # --- FOOTER ---
 st.markdown("""<br><div style="border-top: 1px dashed #333; padding-top: 10px; color: #555; font-size: 0.8em; text-align: right;">[ system ready ] :: execute with caution</div>""", unsafe_allow_html=True)
