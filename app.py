@@ -71,7 +71,7 @@ st.markdown("""
         flex-direction: row;
         align-items: flex-start;
         gap: 40px; 
-        margin-bottom: 40px; /* Jarak aman ke bawah */
+        margin-bottom: 40px; 
         padding-top: 20px;
         font-family: 'Fira Code', monospace;
     }
@@ -104,6 +104,24 @@ st.markdown("""
     
     a { color: var(--arch-blue) !important; text-decoration: none; border-bottom: 1px dotted #333; }
     a:hover { text-decoration: none; border-bottom: 1px solid var(--arch-blue); background: rgba(23, 147, 209, 0.1); }
+
+    /* SOCIAL ICONS STYLE */
+    .social-container {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+        align-items: center;
+    }
+    .social-icon svg {
+        fill: #555; /* Warna default abu gelap */
+        width: 20px;
+        height: 20px;
+        transition: 0.3s;
+    }
+    .social-icon:hover svg {
+        fill: var(--arch-blue); /* Berubah biru saat hover */
+        transform: scale(1.1);
+    }
 
 </style>
 """, unsafe_allow_html=True)
@@ -188,20 +206,19 @@ st.markdown(r"""
         <span class="info-key">taksvj</span>@<span class="info-key">archlinux</span><br>
         ------------------<br>
         <span class="info-key">OS</span>: Arch Linux x86_64<br>
-        <span class="info-key">Host</span>: Streamlit Cloud<br>
+        <span class="info-key">Host</span>: Taksvj/override/log.files<br>
         <span class="info-key">Kernel</span>: 6.6.7-arch1-1<br>
         <span class="info-key">Shell</span>: zsh 5.9<br>
-        <span class="info-key">Tool</span>: OSINT Scanner v5.0 (Pacman)<br>
+        <span class="info-key">Tool</span>: OSINT Scanner v1.1<br>
         <span class="info-key">Theme</span>: Dark / Arch Blue
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# --- INPUT SECTION (FIXED MARGIN) ---
-# Margin bottom diubah jadi positif (10px) supaya ada jarak ke input box
+# --- INPUT SECTION ---
 st.markdown("""
 <div style="font-family: 'Fira Code'; color: #23d18b; margin-bottom: 10px;">
-    [taksvj@archlinux ~]$ <span style="color: #d3dae3;">sudo osint -Syu target_username</span>
+    [taksvj@archlinux ~]$ <span style="color: #d3dae3;">sudo osint -Sybau target_username</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -227,7 +244,7 @@ if run_btn:
         
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # 1. HASIL AUTO (FOUND)
+        # 1. HASIL AUTO
         if hits:
             for site, url in hits:
                 st.markdown(f"""
@@ -239,12 +256,11 @@ if run_btn:
         else:
             st.markdown("<div class='terminal-line'><span class='minus'>error:</span> target not found in public repositories.</div>", unsafe_allow_html=True)
 
-        # 2. HASIL MANUAL (FIX: LINK LANGSUNG)
+        # 2. HASIL MANUAL
         st.markdown("<div style='font-family:Fira Code; color:#777; margin-top:20px; margin-bottom: 5px;'>:: Warning: Some repositories require manual verification:</div>", unsafe_allow_html=True)
         
         for site, url_pattern in manuals.items():
             url = url_pattern.format(target)
-            # Link langsung tanpa teks 'manual check'
             st.markdown(f"""
             <div class='terminal-line'>
                 <span class='bracket'>[</span><span class='warn'> ?? </span><span class='bracket'>]</span> 
@@ -252,7 +268,21 @@ if run_btn:
             </div>
             """, unsafe_allow_html=True)
             
-        st.markdown("<br><div style='color:#1793d1'>:: Transaction successfully finished.</div>", unsafe_allow_html=True)
+        # --- FOOTER LOGOS (X & GITHUB) ---
+        # Menggantikan teks "Transaction successfully finished" dengan ikon SVG
+        st.markdown("""
+        <div class="social-container">
+            <span style='color:#1793d1; font-family:"Fira Code"; font-size: 0.9em;'>:: Transaction finished.</span>
+            
+            <a href="https://x.com/taksvj" target="_blank" class="social-icon" title="Visit X Profile">
+                <svg viewBox="0 0 24 24"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"></path></svg>
+            </a>
+            
+            <a href="https://github.com/taksvj" target="_blank" class="social-icon" title="Visit GitHub Profile">
+                <svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.419-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+            </a>
+        </div>
+        """, unsafe_allow_html=True)
 
     else:
         st.markdown("<br><span class='minus'>error:</span> no target specified.", unsafe_allow_html=True)
