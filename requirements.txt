@@ -6,3 +6,4 @@ instaloader
 Faker
 Pillow
 geopy
+phonenumbers
