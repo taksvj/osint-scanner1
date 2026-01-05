@@ -32,8 +32,9 @@ st.markdown("""
         font-family: 'Fira Code', monospace;
     }
 
-    /* Hide UI Elements */
+    /* HIDE UI ELEMENTS & GARIS PEMISAH */
     #MainMenu, footer, header {visibility: hidden;}
+    hr { display: none !important; } /* Menghilangkan garis pembatas otomatis Streamlit */
 
     /* INPUT FIELD - Terminal Style */
     .stTextInput > div > div > input {
@@ -64,36 +65,36 @@ st.markdown("""
         color: var(--arch-blue);
     }
 
-    /* NEOFETCH CONTAINER STYLE */
-    .neofetch-table {
-        width: 100%;
-        max-width: 800px;
-        margin-bottom: 30px;
-        border-collapse: collapse;
+    /* NEOFETCH LAYOUT FIX */
+    .neofetch-container {
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 40px; /* Jarak antara logo dan teks */
+        margin-bottom: 50px; /* Jarak ke bawah agar tidak ketutup input */
+        padding-top: 20px;
+        font-family: 'Fira Code', monospace;
     }
-    .neofetch-logo {
+
+    .ascii-logo {
         color: var(--arch-blue);
         font-weight: bold;
-        padding-right: 30px;
-        vertical-align: top;
-        white-space: pre; /* Wajib biar ASCII gak hancur */
-        font-family: 'Fira Code', monospace;
+        white-space: pre; /* Wajib agar bentuk ASCII terjaga */
         line-height: 1.2;
     }
-    .neofetch-info {
-        vertical-align: top;
-        font-family: 'Fira Code', monospace;
+
+    .system-info {
         line-height: 1.4;
         color: var(--arch-fg);
     }
+    
     .info-key { color: var(--arch-blue); font-weight: bold; }
-    .info-val { color: var(--arch-fg); }
 
     /* HASIL SCAN STYLE */
     .terminal-line {
         font-family: 'Fira Code', monospace;
         margin-bottom: 5px;
-        border-bottom: 1px solid #222;
+        border-bottom: 1px solid #1a1a1a; /* Garis tipis banget antar hasil */
         padding-bottom: 2px;
     }
     .bracket { color: #555; font-weight: bold; }
@@ -101,8 +102,9 @@ st.markdown("""
     .minus { color: var(--term-red); font-weight: bold; }
     .warn { color: var(--term-yellow); font-weight: bold; }
     
-    a { color: var(--arch-blue) !important; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    a { color: var(--arch-blue) !important; text-decoration: none; border-bottom: 1px dotted #333; }
+    a:hover { text-decoration: none; border-bottom: 1px solid var(--arch-blue); background: rgba(23, 147, 209, 0.1); }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -170,34 +172,30 @@ def check_username(username, anim_placeholder):
     
     return found_list, sites_manual
 
-# --- BAGIAN UTAMA (HEADER NEOFETCH YANG DIPERBAIKI) ---
-
-# Perhatikan double backslash (\\) agar logo tidak hancur
-logo_ascii = """       /\\
-      /  \\
-     /    \\
-    /      \\
-   /   ,,   \\
-  /   |  |   \\
- /_-''    ''-_\\"""
-
-# Layout menggunakan HTML Table agar RAPI dan PRESISI
-st.markdown(f"""
-<table class="neofetch-table">
-    <tr>
-        <td class="neofetch-logo">{logo_ascii}</td>
-        <td class="neofetch-info">
-            <span class="info-key">taksvj</span>@<span class="info-key">archlinux</span><br>
-            ------------------<br>
-            <span class="info-key">OS</span>: Arch Linux x86_64<br>
-            <span class="info-key">Host</span>: Streamlit Cloud<br>
-            <span class="info-key">Kernel</span>: 6.6.7-arch1-1<br>
-            <span class="info-key">Shell</span>: zsh 5.9<br>
-            <span class="info-key">Tool</span>: OSINT Scanner v5.0 (Pacman Edition)<br>
-            <span class="info-key">Theme</span>: Dark / Arch Blue
-        </td>
-    </tr>
-</table>
+# --- HEADER NEOFETCH (MENGGUNAKAN FLEXBOX CSS AGAR LEBIH RAPI) ---
+# Menggunakan raw string (r"") untuk ASCII art agar backslash aman
+st.markdown(r"""
+<div class="neofetch-container">
+    <div class="ascii-logo">
+       /\
+      /  \
+     /    \
+    /      \
+   /   ,,   \
+  /   |  |   \
+ /_-''    ''-_\
+    </div>
+    <div class="system-info">
+        <span class="info-key">taksvj</span>@<span class="info-key">archlinux</span><br>
+        ------------------<br>
+        <span class="info-key">OS</span>: Arch Linux x86_64<br>
+        <span class="info-key">Host</span>: Streamlit Cloud<br>
+        <span class="info-key">Kernel</span>: 6.6.7-arch1-1<br>
+        <span class="info-key">Shell</span>: zsh 5.9<br>
+        <span class="info-key">Tool</span>: OSINT Scanner v5.0 (Pacman)<br>
+        <span class="info-key">Theme</span>: Dark / Arch Blue
+    </div>
+</div>
 """, unsafe_allow_html=True)
 
 # --- INPUT SECTION ---
@@ -207,8 +205,8 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Container untuk Input dan Tombol
-input_col, btn_col = st.columns([4, 1])
+# Layout Input & Tombol
+input_col, btn_col = st.columns([5, 1])
 
 with input_col:
     target = st.text_input("", placeholder="enter username...", label_visibility="collapsed")
@@ -216,19 +214,20 @@ with input_col:
 with btn_col:
     run_btn = st.button("EXECUTE")
 
-# Area Animasi
+# Area Animasi Loading
 loading_area = st.empty()
 
+# --- EKSEKUSI ---
 if run_btn:
     if target:
-        st.markdown(f"<div style='font-family:Fira Code; color:#d3dae3; margin-top: 10px;'>:: Synchronizing package databases for <b>{target}</b>...</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-family:Fira Code; color:#d3dae3; margin-top: 15px;'>:: Synchronizing package databases for <b>{target}</b>...</div>", unsafe_allow_html=True)
         time.sleep(0.5)
         
         hits, manuals = check_username(target, loading_area)
         
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # HASIL AUTO
+        # 1. HASIL AUTO (FOUND)
         if hits:
             for site, url in hits:
                 st.markdown(f"""
@@ -240,15 +239,16 @@ if run_btn:
         else:
             st.markdown("<div class='terminal-line'><span class='minus'>error:</span> target not found in public repositories.</div>", unsafe_allow_html=True)
 
-        # HASIL MANUAL
-        st.markdown("<div style='font-family:Fira Code; color:#777; margin-top:20px;'>:: Warning: Some repositories require manual verification:</div>", unsafe_allow_html=True)
+        # 2. HASIL MANUAL (FIX: LINK LANGSUNG)
+        st.markdown("<div style='font-family:Fira Code; color:#777; margin-top:20px; margin-bottom: 5px;'>:: Warning: Some repositories require manual verification:</div>", unsafe_allow_html=True)
         
         for site, url_pattern in manuals.items():
             url = url_pattern.format(target)
+            # Perubahan: Link langsung di nama situs, tidak ada teks 'manual_check'
             st.markdown(f"""
             <div class='terminal-line'>
                 <span class='bracket'>[</span><span class='warn'> ?? </span><span class='bracket'>]</span> 
-                {site} -> <a href='{url}' target='_blank'>manual_check</a>
+                <a href='{url}' target='_blank'>{site}</a>
             </div>
             """, unsafe_allow_html=True)
             
