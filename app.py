@@ -5,10 +5,11 @@ import socket
 import whois
 import dns.resolver
 import instaloader
+import re # Library Regex buat nyari pola IP
 from faker import Faker
 from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
-from geopy.geocoders import Nominatim # Library baru buat Peta
+from geopy.geocoders import Nominatim
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(
@@ -34,6 +35,7 @@ st.markdown("""
         --term-cyan: #8ec07c;
         --term-orange: #fe8019;
         --term-gray: #928374;
+        --term-white: #ebdbb2;
     }
 
     .stApp {
@@ -52,7 +54,7 @@ st.markdown("""
         font-family: 'Fira Code', monospace !important;
     }
 
-    .stTextInput > div > div > input, .stSelectbox > div > div > div {
+    .stTextInput > div > div > input, .stSelectbox > div > div > div, .stTextArea > div > div > textarea {
         background-color: #1a1a1a !important;
         color: var(--arch-fg) !important;
         border: 1px solid #333 !important;
@@ -90,6 +92,7 @@ st.markdown("""
     .id { color: var(--term-cyan); font-weight: bold; }
     .exif { color: var(--term-orange); font-weight: bold; }
     .geo { color: var(--term-gray); font-weight: bold; }
+    .net { color: var(--term-white); font-weight: bold; }
     
     a { color: var(--arch-blue) !important; text-decoration: none; border-bottom: 1px dotted #333; }
     
@@ -119,7 +122,7 @@ def render_terminal_progress(placeholder, percent, task_name):
     text = f"""<div style="font-family:'Fira Code'; color:#aaa; margin-top:10px;">[{bar}] {percent}% :: {task_name}</div>"""
     placeholder.markdown(text, unsafe_allow_html=True)
 
-# --- MODULES LAMA (DISINGKAT BIAR GAK KEPANJANGAN) ---
+# --- MODULES SEBELUMNYA (DISINGKAT) ---
 def run_username_recon():
     st.markdown("""<div style="font-family: 'Fira Code'; color: #23d18b; margin-bottom: 10px;">[taksvj@archlinux ~]$ <span style="color: #d3dae3;">./sherlock --timeout 1 target_user</span></div>""", unsafe_allow_html=True)
     c1, c2 = st.columns([5, 1])
@@ -149,10 +152,9 @@ def run_domain_recon():
         try:
             ip = socket.gethostbyname(domain)
             st.markdown(f"<div class='terminal-line'><span class='bracket'>[</span><span class='info'> NET </span><span class='bracket'>]</span> IPv4: <span style='color:#d3dae3'>{ip}</span></div>", unsafe_allow_html=True)
-            r = requests.get(f"http://ip-api.com/json/{domain}").json()
+            r = requests.get(f"http://ip-api.com/json/{ip}").json()
             if r['status'] == 'success':
                 st.markdown(f"<div class='terminal-line'><span class='bracket'>[</span><span class='info'> GEO </span><span class='bracket'>]</span> Loc: <span style='color:#d3dae3'>{r['city']}, {r['country']}</span></div>", unsafe_allow_html=True)
-                st.map(data={'lat': [r['lat']], 'lon': [r['lon']]})
         except: pass
 
 def run_instagram_recon():
@@ -184,78 +186,99 @@ def run_exif_probe():
         try:
             image = Image.open(uploaded_file)
             st.markdown(f"<div class='terminal-line'><span class='bracket'>[</span><span class='plus'> OK </span><span class='bracket'>]</span> Image Loaded</div>", unsafe_allow_html=True)
+            exifdata = image._getexif()
+            if exifdata:
+                st.markdown("<div class='terminal-line'><span class='exif'> DAT </span> Metadata Extracted (Check Console)</div>", unsafe_allow_html=True)
         except: pass
 
-# --- MODULE 6: GEO SPY (NEW) ---
 def run_geo_spy():
-    st.markdown("""
-    <div style="font-family: 'Fira Code'; color: #928374; margin-bottom: 10px;">
-        [taksvj@archlinux ~]$ <span style="color: #d3dae3;">./geospy --triangulate target</span>
-    </div>
-    """, unsafe_allow_html=True)
-
+    st.markdown("""<div style="font-family: 'Fira Code'; color: #928374; margin-bottom: 10px;">[taksvj@archlinux ~]$ <span style="color: #d3dae3;">./geospy --triangulate target</span></div>""", unsafe_allow_html=True)
     mode = st.radio("Select Mode:", ["IP Tracker", "Address Hunter"], horizontal=True)
-
     if mode == "IP Tracker":
-        st.markdown("<div style='color:#777; margin-bottom:5px;'>:: Trace physical location of an IP Address.</div>", unsafe_allow_html=True)
         c1, c2 = st.columns([5, 1])
-        ip_addr = c1.text_input("", placeholder="Enter IP (e.g. 8.8.8.8)...", label_visibility="collapsed")
+        ip_addr = c1.text_input("", placeholder="Enter IP...", label_visibility="collapsed")
         run = c2.button("TRACE IP")
-        
         if run and ip_addr:
             try:
                 r = requests.get(f"http://ip-api.com/json/{ip_addr}").json()
                 if r['status'] == 'success':
-                    st.markdown(f"""
-                    <div style="border: 1px solid #928374; padding: 15px; background: rgba(146, 131, 116, 0.1);">
-                        <div style="color:#d3dae3;">TARGET: <span style="color:#fe8019;">{r['query']}</span></div>
-                        <div style="color:#d3dae3;">ISP: {r['isp']}</div>
-                        <div style="color:#d3dae3;">LOCATION: {r['city']}, {r['regionName']}, {r['country']}</div>
-                        <div style="color:#928374; font-size: 0.8em; margin-top:5px;">LAT: {r['lat']} | LON: {r['lon']}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown(f"<div style='border:1px solid #928374; padding:15px; margin-top:10px;'>LOCATION: {r['city']}, {r['country']} <br> ISP: {r['isp']}</div>", unsafe_allow_html=True)
                     st.map(data={'lat': [r['lat']], 'lon': [r['lon']]})
-                else:
-                    st.error("IP Not Found / Private IP")
-            except:
-                st.error("Connection Failed")
-
+            except: pass
     elif mode == "Address Hunter":
-        st.markdown("<div style='color:#777; margin-bottom:5px;'>:: Convert physical address to GPS Coordinates (Geocoding).</div>", unsafe_allow_html=True)
         c1, c2 = st.columns([5, 1])
-        address = c1.text_input("", placeholder="e.g. Monas, Jakarta Pusat...", label_visibility="collapsed")
+        address = c1.text_input("", placeholder="Enter Address...", label_visibility="collapsed")
         run = c2.button("LOCATE")
-        
         if run and address:
             geolocator = Nominatim(user_agent="osint_scanner_v1")
             try:
                 location = geolocator.geocode(address)
                 if location:
+                    st.markdown(f"<div style='margin-top:10px;'>COORDINATES: {location.latitude}, {location.longitude}</div>", unsafe_allow_html=True)
+                    st.map(data={'lat': [location.latitude], 'lon': [location.longitude]})
+            except: pass
+
+# --- MODULE 7: NET STALKER (NEW) ---
+def run_net_stalker():
+    st.markdown("""
+    <div style="font-family: 'Fira Code'; color: #ebdbb2; margin-bottom: 10px;">
+        [taksvj@archlinux ~]$ <span style="color: #d3dae3;">grep -E "([0-9]{1,3}\.){3}[0-9]{1,3}" email_header.txt</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<div style='color:#777; margin-bottom:5px;'>:: Analyze raw email headers to extract sender's Origin IP.</div>", unsafe_allow_html=True)
+    
+    header_text = st.text_area("", placeholder="Paste Raw Email Header here...", height=200)
+    run = st.button("ANALYZE HEADER")
+    
+    if run and header_text:
+        # Regex buat nyari IP Address (IPv4)
+        ips = re.findall(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', header_text)
+        
+        # Filter IP Lokal/Private biar gak menuh-menuhin (127.0.0.1, 192.168..., 10...)
+        public_ips = []
+        for ip in ips:
+            if not (ip.startswith('127.') or ip.startswith('192.168.') or ip.startswith('10.') or ip.startswith('172.')):
+                if ip not in public_ips: # Hapus duplikat
+                    public_ips.append(ip)
+        
+        if public_ips:
+            st.markdown(f"<br><div class='terminal-line'><span class='plus'> SUCCESS </span> Found {len(public_ips)} Potential Public IPs</div>", unsafe_allow_html=True)
+            
+            for ip in public_ips:
+                # Langsung cek lokasi tiap IP yang ketemu
+                try:
+                    r = requests.get(f"http://ip-api.com/json/{ip}").json()
+                    status = "UNKNOWN"
+                    loc = "Unknown Location"
+                    
+                    if r['status'] == 'success':
+                        status = "ACTIVE"
+                        loc = f"{r['city']}, {r['country']} ({r['isp']})"
+                    
                     st.markdown(f"""
-                    <div style="border: 1px solid #928374; padding: 15px; background: rgba(146, 131, 116, 0.1);">
-                        <div style="color:#fe8019; font-weight:bold;">{location.address}</div>
-                        <div style="color:#d3dae3; margin-top:10px;">COORDINATES ACQUIRED:</div>
-                        <div style="font-family: monospace; color:#8ec07c;">{location.latitude}, {location.longitude}</div>
-                        <div style="margin-top:10px;">
-                             <a href="https://www.google.com/maps/search/?api=1&query={location.latitude},{location.longitude}" target="_blank" style="color:#928374; border-bottom:1px dotted #928374;">[ OPEN SATELLITE VIEW ]</a>
+                    <div style="border: 1px solid #ebdbb2; padding: 10px; margin-top: 10px; background: rgba(235, 219, 178, 0.05);">
+                        <div style="display:flex; justify-content:space-between;">
+                            <span style="color:#fe8019; font-weight:bold;">{ip}</span>
+                            <span style="color:#23d18b;">[{status}]</span>
                         </div>
+                        <div style="color:#d3dae3; font-size:0.9em;">{loc}</div>
                     </div>
                     """, unsafe_allow_html=True)
-                    st.map(data={'lat': [location.latitude], 'lon': [location.longitude]})
-                else:
-                    st.warning("Address not found in OpenStreetMap database.")
-            except Exception as e:
-                st.error(f"Geocoding Error: {e}")
+                except:
+                    pass
+        else:
+            st.warning("No public IP addresses found in the header text.")
 
 # --- MAIN LAYOUT & SIDEBAR ---
 with st.sidebar:
     st.markdown("<h2 style='color:#1793d1; text-align:center;'>// TOOLKIT</h2>", unsafe_allow_html=True)
     selected_tool = st.radio(
         "Select Operation:",
-        ["User Recon", "Domain Recon", "Instagram Recon", "Persona Forge", "Exif Probe", "Geo Spy"],
+        ["User Recon", "Domain Recon", "Instagram Recon", "Persona Forge", "Exif Probe", "Geo Spy", "Net Stalker"],
         label_visibility="collapsed"
     )
-    st.markdown("<br><div style='text-align:center; color:#555; font-size:0.8em;'>v6.0-global</div>", unsafe_allow_html=True)
+    st.markdown("<br><div style='text-align:center; color:#555; font-size:0.8em;'>v7.0-stealth</div>", unsafe_allow_html=True)
 
 # HEADER NEOFETCH
 st.markdown(r"""
@@ -287,5 +310,6 @@ elif selected_tool == "Instagram Recon": run_instagram_recon()
 elif selected_tool == "Persona Forge": run_persona_forge()
 elif selected_tool == "Exif Probe": run_exif_probe()
 elif selected_tool == "Geo Spy": run_geo_spy()
+elif selected_tool == "Net Stalker": run_net_stalker()
 
 st.markdown("""<br><div style="border-top: 1px dashed #333; padding-top: 10px; color: #555; font-size: 0.8em; text-align: right;">[ system ready ] :: execute with caution</div>""", unsafe_allow_html=True)
