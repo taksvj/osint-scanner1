@@ -32,9 +32,9 @@ st.markdown("""
         font-family: 'Fira Code', monospace;
     }
 
-    /* HIDE UI ELEMENTS & GARIS PEMISAH */
+    /* HIDE UI ELEMENTS */
     #MainMenu, footer, header {visibility: hidden;}
-    hr { display: none !important; } /* Menghilangkan garis pembatas otomatis Streamlit */
+    hr { display: none !important; } 
 
     /* INPUT FIELD - Terminal Style */
     .stTextInput > div > div > input {
@@ -65,13 +65,13 @@ st.markdown("""
         color: var(--arch-blue);
     }
 
-    /* NEOFETCH LAYOUT FIX */
+    /* NEOFETCH LAYOUT */
     .neofetch-container {
         display: flex;
         flex-direction: row;
         align-items: flex-start;
-        gap: 40px; /* Jarak antara logo dan teks */
-        margin-bottom: 50px; /* Jarak ke bawah agar tidak ketutup input */
+        gap: 40px; 
+        margin-bottom: 40px; /* Jarak aman ke bawah */
         padding-top: 20px;
         font-family: 'Fira Code', monospace;
     }
@@ -79,7 +79,7 @@ st.markdown("""
     .ascii-logo {
         color: var(--arch-blue);
         font-weight: bold;
-        white-space: pre; /* Wajib agar bentuk ASCII terjaga */
+        white-space: pre; 
         line-height: 1.2;
     }
 
@@ -94,7 +94,7 @@ st.markdown("""
     .terminal-line {
         font-family: 'Fira Code', monospace;
         margin-bottom: 5px;
-        border-bottom: 1px solid #1a1a1a; /* Garis tipis banget antar hasil */
+        border-bottom: 1px solid #1a1a1a; 
         padding-bottom: 2px;
     }
     .bracket { color: #555; font-weight: bold; }
@@ -172,8 +172,7 @@ def check_username(username, anim_placeholder):
     
     return found_list, sites_manual
 
-# --- HEADER NEOFETCH (MENGGUNAKAN FLEXBOX CSS AGAR LEBIH RAPI) ---
-# Menggunakan raw string (r"") untuk ASCII art agar backslash aman
+# --- HEADER NEOFETCH ---
 st.markdown(r"""
 <div class="neofetch-container">
     <div class="ascii-logo">
@@ -198,9 +197,10 @@ st.markdown(r"""
 </div>
 """, unsafe_allow_html=True)
 
-# --- INPUT SECTION ---
+# --- INPUT SECTION (FIXED MARGIN) ---
+# Margin bottom diubah jadi positif (10px) supaya ada jarak ke input box
 st.markdown("""
-<div style="font-family: 'Fira Code'; color: #23d18b; margin-bottom: -15px;">
+<div style="font-family: 'Fira Code'; color: #23d18b; margin-bottom: 10px;">
     [taksvj@archlinux ~]$ <span style="color: #d3dae3;">sudo osint -Syu target_username</span>
 </div>
 """, unsafe_allow_html=True)
@@ -244,7 +244,7 @@ if run_btn:
         
         for site, url_pattern in manuals.items():
             url = url_pattern.format(target)
-            # Perubahan: Link langsung di nama situs, tidak ada teks 'manual_check'
+            # Link langsung tanpa teks 'manual check'
             st.markdown(f"""
             <div class='terminal-line'>
                 <span class='bracket'>[</span><span class='warn'> ?? </span><span class='bracket'>]</span> 
