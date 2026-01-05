@@ -39,6 +39,7 @@ st.markdown("""
         --term-gray: #928374;
         --term-white: #ebdbb2;
         --term-pink: #d3869b;
+        --term-gold: #fabd2f;
     }
 
     .stApp {
@@ -97,6 +98,7 @@ st.markdown("""
     .geo { color: var(--term-gray); font-weight: bold; }
     .net { color: var(--term-white); font-weight: bold; }
     .num { color: var(--term-pink); font-weight: bold; }
+    .coin { color: var(--term-gold); font-weight: bold; }
     
     a { color: var(--arch-blue) !important; text-decoration: none; border-bottom: 1px dotted #333; }
     
@@ -126,7 +128,7 @@ def render_terminal_progress(placeholder, percent, task_name):
     text = f"""<div style="font-family:'Fira Code'; color:#aaa; margin-top:10px;">[{bar}] {percent}% :: {task_name}</div>"""
     placeholder.markdown(text, unsafe_allow_html=True)
 
-# --- MODULES SEBELUMNYA (DISINGKAT) ---
+# --- MODULE 1: USERNAME RECON ---
 def run_username_recon():
     st.markdown("""<div style="font-family: 'Fira Code'; color: #23d18b; margin-bottom: 10px;">[taksvj@archlinux ~]$ <span style="color: #d3dae3;">./sherlock --timeout 1 target_user</span></div>""", unsafe_allow_html=True)
     c1, c2 = st.columns([5, 1])
@@ -146,6 +148,7 @@ def run_username_recon():
             for s, u in found: st.markdown(f"<div class='terminal-line'><span class='bracket'>[</span><span class='plus'> FOUND </span><span class='bracket'>]</span> <a href='{u}' target='_blank'>{s} account found</a></div>", unsafe_allow_html=True)
         else: st.markdown("<div class='terminal-line'><span class='minus'>error:</span> No accounts found.</div>", unsafe_allow_html=True)
 
+# --- MODULE 2: DOMAIN RECON ---
 def run_domain_recon():
     st.markdown("""<div style="font-family: 'Fira Code'; color: #23d18b; margin-bottom: 10px;">[taksvj@archlinux ~]$ <span style="color: #d3dae3;">sudo nmap -sn target_domain</span></div>""", unsafe_allow_html=True)
     c1, c2 = st.columns([5, 1])
@@ -161,6 +164,7 @@ def run_domain_recon():
                 st.markdown(f"<div class='terminal-line'><span class='bracket'>[</span><span class='info'> GEO </span><span class='bracket'>]</span> Loc: <span style='color:#d3dae3'>{r['city']}, {r['country']}</span></div>", unsafe_allow_html=True)
         except: pass
 
+# --- MODULE 3: INSTAGRAM RECON ---
 def run_instagram_recon():
     st.markdown("""<div style="font-family: 'Fira Code'; color: #b16286; margin-bottom: 10px;">[taksvj@archlinux ~]$ <span style="color: #d3dae3;">instaloader --profile target_ig</span></div>""", unsafe_allow_html=True)
     c1, c2 = st.columns([5, 1])
@@ -174,6 +178,7 @@ def run_instagram_recon():
             st.markdown(html_content, unsafe_allow_html=True)
         except Exception as e: st.error(f"Error: {e}")
 
+# --- MODULE 4: PERSONA FORGE ---
 def run_persona_forge():
     st.markdown("""<div style="font-family: 'Fira Code'; color: #8ec07c; margin-bottom: 10px;">[taksvj@archlinux ~]$ <span style="color: #d3dae3;">python forge_identity.py --locale en_US</span></div>""", unsafe_allow_html=True)
     c1, c2 = st.columns([3, 1])
@@ -183,6 +188,7 @@ def run_persona_forge():
         fake = Faker(locale)
         st.markdown(f"""<div style="border: 1px solid #8ec07c; padding: 20px; margin-top: 10px;"><div style="color: #8ec07c;">IDENTITY FORGED</div><div style="color: #d3dae3;">{fake.name()}</div><div style="color: #666;">{fake.address()}</div></div>""", unsafe_allow_html=True)
 
+# --- MODULE 5: EXIF PROBE ---
 def run_exif_probe():
     st.markdown("""<div style="font-family: 'Fira Code'; color: #fe8019; margin-bottom: 10px;">[taksvj@archlinux ~]$ <span style="color: #d3dae3;">exiftool -all target_image.jpg</span></div>""", unsafe_allow_html=True)
     uploaded_file = st.file_uploader("", type=['jpg', 'jpeg', 'png'], label_visibility="collapsed")
@@ -195,6 +201,7 @@ def run_exif_probe():
                 st.markdown("<div class='terminal-line'><span class='exif'> DAT </span> Metadata Extracted (Check Console)</div>", unsafe_allow_html=True)
         except: pass
 
+# --- MODULE 6: GEO SPY ---
 def run_geo_spy():
     st.markdown("""<div style="font-family: 'Fira Code'; color: #928374; margin-bottom: 10px;">[taksvj@archlinux ~]$ <span style="color: #d3dae3;">./geospy --triangulate target</span></div>""", unsafe_allow_html=True)
     mode = st.radio("Select Mode:", ["IP Tracker", "Address Hunter"], horizontal=True)
@@ -222,6 +229,7 @@ def run_geo_spy():
                     st.map(data={'lat': [location.latitude], 'lon': [location.longitude]})
             except: pass
 
+# --- MODULE 7: NET STALKER ---
 def run_net_stalker():
     st.markdown("""<div style="font-family: 'Fira Code'; color: #ebdbb2; margin-bottom: 10px;">[taksvj@archlinux ~]$ <span style="color: #d3dae3;">grep -E "([0-9]{1,3}\.){3}[0-9]{1,3}" email_header.txt</span></div>""", unsafe_allow_html=True)
     header_text = st.text_area("", placeholder="Paste Raw Email Header here...", height=200)
@@ -230,7 +238,7 @@ def run_net_stalker():
         ips = re.findall(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', header_text)
         public_ips = []
         for ip in ips:
-            if not (ip.startswith('127.') or ip.startswith('192.168.') or ip.startswith('10.')):
+            if not (ip.startswith('127.') or ip.startswith('192.168.') or ip.startswith('10.') or ip.startswith('172.')):
                 if ip not in public_ips: public_ips.append(ip)
         if public_ips:
             st.markdown(f"<br><div class='terminal-line'><span class='plus'> SUCCESS </span> Found {len(public_ips)} Potential Public IPs</div>", unsafe_allow_html=True)
@@ -240,7 +248,7 @@ def run_net_stalker():
                     st.markdown(f"<div style='border:1px solid #ebdbb2; padding:10px; margin-top:10px;'>IP: {ip} | LOC: {r['city']}, {r['country']} ({r['isp']})</div>", unsafe_allow_html=True)
                 except: pass
 
-# --- MODULE 8: NUM SEEKER (NEW) ---
+# --- MODULE 8: NUM SEEKER (FIXED) ---
 def run_num_seeker():
     st.markdown("""
     <div style="font-family: 'Fira Code'; color: #d3869b; margin-bottom: 10px;">
@@ -256,70 +264,147 @@ def run_num_seeker():
     
     if run and phone_input:
         try:
-            # Parse Number
             parsed_num = phonenumbers.parse(phone_input, None)
-            
-            # Cek Validitas
             is_valid = phonenumbers.is_valid_number(parsed_num)
-            is_possible = phonenumbers.is_possible_number(parsed_num)
             
             if is_valid:
-                # Ambil Data
                 country = geocoder.description_for_number(parsed_num, "en")
                 provider = carrier.name_for_number(parsed_num, "en")
                 time_zones = timezone.time_zones_for_number(parsed_num)
                 formatted_intl = phonenumbers.format_number(parsed_num, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
-                
-                # Buat Link WhatsApp (Tanpa Save Nomor)
-                # Kita hapus tanda '+' dan spasi buat link WA
                 wa_clean = str(parsed_num.country_code) + str(parsed_num.national_number)
                 wa_link = f"https://wa.me/{wa_clean}"
                 
-                st.markdown(f"""
-                <div style="border: 1px solid #d3869b; padding: 15px; background: rgba(211, 134, 155, 0.1); margin-top: 15px;">
-                    <div style="display:flex; justify-content:space-between;">
-                        <span style="color:#d3dae3; font-size: 1.2em; font-weight:bold;">{formatted_intl}</span>
-                        <span style="color:#23d18b; font-weight:bold;">[ VALID ]</span>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                        <div>
-                            <div style="color:#777; font-size:0.8em;">COUNTRY / REGION</div>
-                            <div style="color:#d3869b;">{country}</div>
-                        </div>
-                        <div>
-                            <div style="color:#777; font-size:0.8em;">CARRIER (PROVIDER)</div>
-                            <div style="color:#d3dae3;">{provider}</div>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-top: 10px;">
-                        <div style="color:#777; font-size:0.8em;">TIMEZONE</div>
-                        <div style="color:#d3dae3;">{', '.join(time_zones)}</div>
-                    </div>
-                    
-                    <div style="margin-top: 20px; border-top: 1px dashed #555; padding-top: 10px;">
-                        <span style="color:#23d18b;">WHATSAPP RECON:</span> 
-                        <a href="{wa_link}" target="_blank" style="color:#d3869b; border-bottom:1px dotted #d3869b;">[ OPEN DIRECT CHAT ]</a>
-                        <br><span style="color:#777; font-size:0.8em;">*Click to view Profile Picture without saving contact.</span>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                # HTML RATA KIRI (DIPERBAIKI)
+                html_content = f"""
+<div style="border: 1px solid #d3869b; padding: 15px; background: rgba(211, 134, 155, 0.1); margin-top: 15px;">
+<div style="display:flex; justify-content:space-between;">
+<span style="color:#d3dae3; font-size: 1.2em; font-weight:bold;">{formatted_intl}</span>
+<span style="color:#23d18b; font-weight:bold;">[ VALID ]</span>
+</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+<div>
+<div style="color:#777; font-size:0.8em;">COUNTRY / REGION</div>
+<div style="color:#d3869b;">{country}</div>
+</div>
+<div>
+<div style="color:#777; font-size:0.8em;">CARRIER (PROVIDER)</div>
+<div style="color:#d3dae3;">{provider}</div>
+</div>
+</div>
+<div style="margin-top: 10px;">
+<div style="color:#777; font-size:0.8em;">TIMEZONE</div>
+<div style="color:#d3dae3;">{', '.join(time_zones)}</div>
+</div>
+<div style="margin-top: 20px; border-top: 1px dashed #555; padding-top: 10px;">
+<span style="color:#23d18b;">WHATSAPP RECON:</span> 
+<a href="{wa_link}" target="_blank" style="color:#d3869b; border-bottom:1px dotted #d3869b;">[ OPEN DIRECT CHAT ]</a>
+<br><span style="color:#777; font-size:0.8em;">*Click to view Profile Picture without saving contact.</span>
+</div>
+</div>
+"""
+                st.markdown(html_content, unsafe_allow_html=True)
             else:
                 st.error("Invalid Phone Number. Make sure to use Country Code (e.g., +62).")
-                
         except Exception as e:
             st.error(f"Error Parsing: {e}. Please use format +628...")
+
+# --- MODULE 9: CRYPTO SPY (BARU) ---
+def run_crypto_spy():
+    st.markdown("""
+    <div style="font-family: 'Fira Code'; color: #fabd2f; margin-bottom: 10px;">
+        [taksvj@archlinux ~]$ <span style="color: #d3dae3;">./coin_tracer --audit wallet_addr</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<div style='color:#777; margin-bottom:5px;'>:: Audit Crypto Wallet Balance & Transactions (BTC/ETH).</div>", unsafe_allow_html=True)
+    
+    c1, c2 = st.columns([5, 1])
+    wallet = c1.text_input("", placeholder="Enter Wallet Address (BTC/ETH)...", label_visibility="collapsed")
+    run = c2.button("AUDIT WALLET")
+    
+    if run and wallet:
+        coin_type = "UNKNOWN"
+        api_url = ""
+        explorer_link = ""
+        symbol = ""
+        
+        if wallet.startswith("1") or wallet.startswith("3") or wallet.startswith("bc1"):
+            coin_type = "BITCOIN (BTC)"
+            api_url = f"https://api.blockcypher.com/v1/btc/main/addrs/{wallet}"
+            explorer_link = f"https://www.blockchain.com/explorer/addresses/btc/{wallet}"
+            symbol = "BTC"
+        elif wallet.startswith("0x"):
+            coin_type = "ETHEREUM (ETH)"
+            api_url = f"https://api.blockcypher.com/v1/eth/main/addrs/{wallet}"
+            explorer_link = f"https://etherscan.io/address/{wallet}"
+            symbol = "ETH"
+        
+        if coin_type != "UNKNOWN":
+            try:
+                with st.spinner(f"Connecting to {coin_type} Blockchain Node..."):
+                    r = requests.get(api_url)
+                    data = r.json()
+                    
+                    if 'error' not in data:
+                        balance = 0
+                        total_rx = 0
+                        n_tx = data['n_tx']
+                        
+                        if symbol == "BTC":
+                            balance = data.get('balance', 0) / 100000000
+                            total_rx = data.get('total_received', 0) / 100000000
+                        else:
+                            balance = data.get('balance', 0) / 1000000000000000000
+                        
+                        # HTML RATA KIRI (AMAN)
+                        html_content = f"""
+<div style="border: 1px solid #fabd2f; padding: 20px; background: rgba(250, 189, 47, 0.1); margin-top: 15px;">
+<div style="display:flex; justify-content:space-between; align-items:center;">
+<h3 style="color:#fabd2f; margin:0;">{coin_type}</h3>
+<span style="color:#23d18b; font-weight:bold;">[ ACTIVE NODE ]</span>
+</div>
+<div style="margin-top: 15px; font-family:monospace; color:#aaa; font-size:0.9em; word-break: break-all;">
+{wallet}
+</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 20px;">
+<div style="text-align:center; border:1px dashed #555; padding:10px;">
+<div style="color:#777; font-size:0.8em;">CURRENT BALANCE</div>
+<div style="color:#d3dae3; font-size:1.2em; font-weight:bold;">{balance:.6f} {symbol}</div>
+</div>
+<div style="text-align:center; border:1px dashed #555; padding:10px;">
+<div style="color:#777; font-size:0.8em;">TOTAL RECEIVED</div>
+<div style="color:#d3dae3; font-size:1.2em; font-weight:bold;">{total_rx:.6f} {symbol}</div>
+</div>
+<div style="text-align:center; border:1px dashed #555; padding:10px;">
+<div style="color:#777; font-size:0.8em;">TRANSACTIONS</div>
+<div style="color:#fabd2f; font-size:1.2em; font-weight:bold;">{n_tx}</div>
+</div>
+</div>
+<div style="margin-top: 20px; text-align:center;">
+<a href="{explorer_link}" target="_blank" style="color:#fabd2f; border-bottom:1px dotted #fabd2f;">
+[ VIEW FULL LEDGER ON BLOCKCHAIN ]
+</a>
+</div>
+</div>
+"""
+                        st.markdown(html_content, unsafe_allow_html=True)
+                    else:
+                        st.error(f"Error from Blockchain Node: {data.get('error')}")
+            except Exception as e:
+                st.error(f"Connection Error: {e}")
+        else:
+            st.warning("Unknown Wallet Format. Supports BTC (start with 1, 3, bc1) and ETH (start with 0x).")
 
 # --- MAIN LAYOUT & SIDEBAR ---
 with st.sidebar:
     st.markdown("<h2 style='color:#1793d1; text-align:center;'>// TOOLKIT</h2>", unsafe_allow_html=True)
     selected_tool = st.radio(
         "Select Operation:",
-        ["User Recon", "Domain Recon", "Instagram Recon", "Persona Forge", "Exif Probe", "Geo Spy", "Net Stalker", "Num Seeker"],
+        ["User Recon", "Domain Recon", "Instagram Recon", "Persona Forge", "Exif Probe", "Geo Spy", "Net Stalker", "Num Seeker", "Crypto Spy"],
         label_visibility="collapsed"
     )
-    st.markdown("<br><div style='text-align:center; color:#555; font-size:0.8em;'>v8.0-unlimited</div>", unsafe_allow_html=True)
+    st.markdown("<br><div style='text-align:center; color:#555; font-size:0.8em;'>v9.0-final</div>", unsafe_allow_html=True)
 
 # HEADER NEOFETCH
 st.markdown(r"""
@@ -353,5 +438,6 @@ elif selected_tool == "Exif Probe": run_exif_probe()
 elif selected_tool == "Geo Spy": run_geo_spy()
 elif selected_tool == "Net Stalker": run_net_stalker()
 elif selected_tool == "Num Seeker": run_num_seeker()
+elif selected_tool == "Crypto Spy": run_crypto_spy()
 
 st.markdown("""<br><div style="border-top: 1px dashed #333; padding-top: 10px; color: #555; font-size: 0.8em; text-align: right;">[ system ready ] :: execute with caution</div>""", unsafe_allow_html=True)
