@@ -5,7 +5,7 @@ import socket
 import whois
 import dns.resolver
 import instaloader
-from faker import Faker # Library baru buat data palsu
+from faker import Faker
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(
@@ -185,7 +185,7 @@ def run_instagram_recon():
         except Exception as e:
             st.error(f"Error: {e}")
 
-# --- MODULE 4: PERSONA FORGE (FAKE ID) ---
+# --- MODULE 4: PERSONA FORGE (FIXED) ---
 def run_persona_forge():
     st.markdown("""
     <div style="font-family: 'Fira Code'; color: #8ec07c; margin-bottom: 10px;">
@@ -209,51 +209,48 @@ def run_persona_forge():
         ipv4 = fake.ipv4()
         credit_card = fake.credit_card_number()
         
-        st.markdown(f"""
-        <div style="border: 1px solid #8ec07c; padding: 20px; margin-top: 10px; background: rgba(0,20,0,0.2);">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed #444; padding-bottom: 10px;">
-                <h3 style="color: #8ec07c; margin:0;">IDENTITY FORGED</h3>
-                <span style="color: #555; font-size: 0.8em;">[ VERIFIED ]</span>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
-                <div>
-                    <div style="color: #666; font-size: 0.8em;">FULL NAME</div>
-                    <div style="color: #d3dae3; font-size: 1.2em; font-weight: bold;">{name}</div>
-                </div>
-                <div>
-                    <div style="color: #666; font-size: 0.8em;">OCCUPATION</div>
-                    <div style="color: #d3dae3;">{job}</div>
-                </div>
-            </div>
-
-            <div style="margin-top: 15px;">
-                <div style="color: #666; font-size: 0.8em;">ADDRESS</div>
-                <div style="color: #d3dae3;">{addr}</div>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
-                <div>
-                    <div style="color: #666; font-size: 0.8em;">EMAIL</div>
-                    <div style="color: #8ec07c;">{email}</div>
-                </div>
-                <div>
-                    <div style="color: #666; font-size: 0.8em;">IP SPOOF</div>
-                    <div style="color: #fa5c5c;">{ipv4}</div>
-                </div>
-            </div>
-            
-            <div style="margin-top: 15px; border-top: 1px dashed #333; padding-top: 10px;">
-                <div style="color: #666; font-size: 0.8em;">USER AGENT</div>
-                <div style="color: #aaa; font-size: 0.8em; font-family: monospace;">{ua}</div>
-            </div>
-             <div style="margin-top: 10px;">
-                <div style="color: #666; font-size: 0.8em;">CREDIT CARD (FAKE)</div>
-                <div style="color: #d3dae3; font-family: monospace;">{credit_card}</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
+        # [FIXED] HTML RATA KIRI (NO INDENTATION)
+        html_code = f"""
+<div style="border: 1px solid #8ec07c; padding: 20px; margin-top: 10px; background: rgba(0,20,0,0.2);">
+<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed #444; padding-bottom: 10px;">
+<h3 style="color: #8ec07c; margin:0;">IDENTITY FORGED</h3>
+<span style="color: #555; font-size: 0.8em;">[ VERIFIED ]</span>
+</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+<div>
+<div style="color: #666; font-size: 0.8em;">FULL NAME</div>
+<div style="color: #d3dae3; font-size: 1.2em; font-weight: bold;">{name}</div>
+</div>
+<div>
+<div style="color: #666; font-size: 0.8em;">OCCUPATION</div>
+<div style="color: #d3dae3;">{job}</div>
+</div>
+</div>
+<div style="margin-top: 15px;">
+<div style="color: #666; font-size: 0.8em;">ADDRESS</div>
+<div style="color: #d3dae3;">{addr}</div>
+</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+<div>
+<div style="color: #666; font-size: 0.8em;">EMAIL</div>
+<div style="color: #8ec07c;">{email}</div>
+</div>
+<div>
+<div style="color: #666; font-size: 0.8em;">IP SPOOF</div>
+<div style="color: #fa5c5c;">{ipv4}</div>
+</div>
+</div>
+<div style="margin-top: 15px; border-top: 1px dashed #333; padding-top: 10px;">
+<div style="color: #666; font-size: 0.8em;">USER AGENT</div>
+<div style="color: #aaa; font-size: 0.8em; font-family: monospace;">{ua}</div>
+</div>
+<div style="margin-top: 10px;">
+<div style="color: #666; font-size: 0.8em;">CREDIT CARD (FAKE)</div>
+<div style="color: #d3dae3; font-family: monospace;">{credit_card}</div>
+</div>
+</div>
+"""
+        st.markdown(html_code, unsafe_allow_html=True)
         st.markdown("<br><div class='terminal-line'><span class='plus'>SUCCESS</span> Identity saved to memory buffer.</div>", unsafe_allow_html=True)
 
 # --- MAIN LAYOUT & SIDEBAR ---
@@ -264,7 +261,7 @@ with st.sidebar:
         ["User Recon", "Domain Recon", "Instagram Recon", "Persona Forge"],
         label_visibility="collapsed"
     )
-    st.markdown("<br><div style='text-align:center; color:#555; font-size:0.8em;'>v4.0-matrix</div>", unsafe_allow_html=True)
+    st.markdown("<br><div style='text-align:center; color:#555; font-size:0.8em;'>v4.1-stable</div>", unsafe_allow_html=True)
 
 # HEADER NEOFETCH
 st.markdown(r"""
