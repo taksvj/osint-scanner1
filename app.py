@@ -1,19 +1,21 @@
 import streamlit as st
 import requests
 import time
+import socket
+import whois
+import dns.resolver
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(
     page_title="root@archlinux:~",
     page_icon="🐧",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # --- CSS ARCH LINUX THEME ---
 st.markdown("""
 <style>
-    /* Import Font Terminal */
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap');
 
     :root {
@@ -25,18 +27,24 @@ st.markdown("""
         --term-yellow: #f2d648;
     }
 
-    /* Reset Streamlit */
     .stApp {
         background-color: var(--arch-bg);
         color: var(--arch-fg);
         font-family: 'Fira Code', monospace;
     }
 
-    /* HIDE UI ELEMENTS */
     #MainMenu, footer, header {visibility: hidden;}
-    hr { display: none !important; } 
+    
+    /* SIDEBAR STYLE */
+    [data-testid="stSidebar"] {
+        background-color: #0a0a0a;
+        border-right: 1px solid #333;
+    }
+    [data-testid="stSidebar"] * {
+        font-family: 'Fira Code', monospace !important;
+    }
 
-    /* INPUT FIELD - Terminal Style */
+    /* INPUT FIELD */
     .stTextInput > div > div > input {
         background-color: #1a1a1a !important;
         color: var(--arch-fg) !important;
@@ -47,7 +55,6 @@ st.markdown("""
     }
     .stTextInput > div > div > input:focus {
         border-color: var(--arch-blue) !important;
-        box-shadow: none !important;
     }
 
     /* BUTTON STYLE */
@@ -65,143 +72,177 @@ st.markdown("""
         color: var(--arch-blue);
     }
 
-    /* NEOFETCH LAYOUT */
-    .neofetch-container {
-        display: flex;
-        flex-direction: row;
-        align-items: flex-start;
-        gap: 40px; 
-        margin-bottom: 40px; 
-        padding-top: 20px;
-        font-family: 'Fira Code', monospace;
-    }
-
-    .ascii-logo {
-        color: var(--arch-blue);
-        font-weight: bold;
-        white-space: pre; 
-        line-height: 1.2;
-    }
-
-    .system-info {
-        line-height: 1.4;
-        color: var(--arch-fg);
-    }
-    
-    .info-key { color: var(--arch-blue); font-weight: bold; }
-
-    /* HASIL SCAN STYLE */
-    .terminal-line {
-        font-family: 'Fira Code', monospace;
-        margin-bottom: 5px;
-        border-bottom: 1px solid #1a1a1a; 
-        padding-bottom: 2px;
-    }
+    /* TERMINAL OUTPUT STYLES */
+    .terminal-line { margin-bottom: 5px; border-bottom: 1px solid #1a1a1a; padding-bottom: 2px; }
     .bracket { color: #555; font-weight: bold; }
     .plus { color: var(--term-green); font-weight: bold; }
     .minus { color: var(--term-red); font-weight: bold; }
     .warn { color: var(--term-yellow); font-weight: bold; }
+    .info { color: var(--arch-blue); font-weight: bold; }
     
     a { color: var(--arch-blue) !important; text-decoration: none; border-bottom: 1px dotted #333; }
-    a:hover { text-decoration: none; border-bottom: 1px solid var(--arch-blue); background: rgba(23, 147, 209, 0.1); }
 
-    /* SOCIAL ICONS STYLE */
-    .social-container {
-        display: flex;
-        gap: 15px;
-        margin-top: 20px;
-        align-items: center;
+    /* NEOFETCH CONTAINER */
+    .neofetch-container {
+        display: flex; gap: 40px; margin-bottom: 30px; padding-top: 10px;
         font-family: 'Fira Code', monospace;
     }
-    
-    .social-link {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none !important;
-        border: none !important;
-    }
-
-    .social-icon svg {
-        fill: #555; 
-        width: 24px;
-        height: 24px;
-        transition: 0.3s;
-    }
-    
-    .social-link:hover .social-icon svg {
-        fill: var(--arch-blue); 
-        transform: scale(1.1);
-    }
-
+    .ascii-logo { color: var(--arch-blue); font-weight: bold; white-space: pre; line-height: 1.2; }
+    .system-info { line-height: 1.4; color: var(--arch-fg); }
+    .info-key { color: var(--arch-blue); font-weight: bold; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- FUNGSI PROGRESS BAR TEXT-BASED ---
-def render_terminal_progress(placeholder, percent, current_node):
-    bar_length = 30
-    filled_length = int(bar_length * percent // 100)
-    pacman_char = "C" if percent % 2 == 0 else "c"
-    if percent == 100: pacman_char = "o"
+# --- FUNGSI PROGRESS BAR ---
+def render_terminal_progress(placeholder, percent, task_name):
+    bar_len = 20
+    filled = int(bar_len * percent // 100)
+    bar = "█" * filled + "░" * (bar_len - filled)
     
-    bar = " " * filled_length + pacman_char + "•" * (bar_length - filled_length - 1)
-    
-    text_bar = f"""
-    <div style="font-family: 'Fira Code', monospace; color: #d3dae3; margin-top: 10px;">
-        <span style="color:#555">::</span> Processing node: <span style="color:#1793d1">{current_node}</span><br>
-        <span style="color:#d3dae3">[{bar}]</span> {percent}%
+    text = f"""
+    <div style="font-family:'Fira Code'; color:#aaa; margin-top:10px;">
+        [{bar}] {percent}% :: {task_name}
     </div>
     """
-    placeholder.markdown(text_bar, unsafe_allow_html=True)
+    placeholder.markdown(text, unsafe_allow_html=True)
 
-# --- LOGIKA PROGRAM ---
-def check_username(username, anim_placeholder):
-    headers = {'User-Agent': 'Mozilla/5.0'}
+# --- MODULE 1: USERNAME RECON ---
+def run_username_recon():
+    st.markdown("""
+    <div style="font-family: 'Fira Code'; color: #23d18b; margin-bottom: 10px;">
+        [taksvj@archlinux ~]$ <span style="color: #d3dae3;">./sherlock --timeout 1 target_user</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    c1, c2 = st.columns([5, 1])
+    target = c1.text_input("", placeholder="username...", label_visibility="collapsed")
+    run = c2.button("SCAN USER")
     
-    sites_auto = {
-        "aur.archlinux.org": "https://aur.archlinux.org/account/{}",
-        "github.com": "https://github.com/{}",
-        "gitlab.com": "https://gitlab.com/{}",
-        "spotify.com": "https://open.spotify.com/user/{}",
-        "steamcommunity.com": "https://steamcommunity.com/id/{}",
-        "roblox.com": "https://www.roblox.com/user.aspx?username={}",
-        "wattpad.com": "https://www.wattpad.com/user/{}",
-        "medium.com": "https://medium.com/@{}",
-    }
+    loading = st.empty()
 
-    sites_manual = {
-        "instagram.com": "https://www.instagram.com/{}",
-        "twitter.com": "https://twitter.com/{}",
-        "tiktok.com": "https://www.tiktok.com/@{}",
-        "facebook.com": "https://www.facebook.com/{}",
-    }
+    if run and target:
+        st.markdown(f"<div style='color:#777;'>:: Initializing scan for user: <b>{target}</b>...</div><br>", unsafe_allow_html=True)
+        
+        # List Website
+        sites = {
+            "GitHub": f"https://github.com/{target}",
+            "Instagram": f"https://www.instagram.com/{target}",
+            "Twitter/X": f"https://twitter.com/{target}",
+            "Facebook": f"https://www.facebook.com/{target}",
+            "Steam": f"https://steamcommunity.com/id/{target}",
+            "GitLab": f"https://gitlab.com/{target}",
+            "Reddit": f"https://www.reddit.com/user/{target}",
+            "Medium": f"https://medium.com/@{target}",
+            "TikTok": f"https://www.tiktok.com/@{target}"
+        }
 
-    found_list = []
-    total = len(sites_auto)
-    count = 0
-    
-    for site, url_pattern in sites_auto.items():
-        count += 1
-        url = url_pattern.format(username)
-        percent = int((count / total) * 100)
+        found = []
+        count = 0
         
-        render_terminal_progress(anim_placeholder, percent, site)
+        for site, url in sites.items():
+            count += 1
+            render_terminal_progress(loading, int((count/len(sites))*100), f"Checking {site}...")
+            
+            try:
+                # Request sederhana
+                r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=1.5)
+                # Filter respons 200 OK
+                if r.status_code == 200:
+                    found.append((site, url))
+            except:
+                pass
         
+        loading.empty()
+        
+        # Hasil Output
+        if found:
+            for s, u in found:
+                st.markdown(f"<div class='terminal-line'><span class='bracket'>[</span><span class='plus'> FOUND </span><span class='bracket'>]</span> <a href='{u}' target='_blank'>{s} account found</a></div>", unsafe_allow_html=True)
+        else:
+            st.markdown("<div class='terminal-line'><span class='minus'>error:</span> No accounts found with standard scan.</div>", unsafe_allow_html=True)
+
+# --- MODULE 2: DOMAIN RECON ---
+def run_domain_recon():
+    st.markdown("""
+    <div style="font-family: 'Fira Code'; color: #23d18b; margin-bottom: 10px;">
+        [taksvj@archlinux ~]$ <span style="color: #d3dae3;">sudo nmap -sn --dns-servers target_domain</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    c1, c2 = st.columns([5, 1])
+    domain = c1.text_input("", placeholder="domain.com...", label_visibility="collapsed")
+    run = c2.button("SCAN DOMAIN")
+
+    if run and domain:
+        # Cleaning input
+        domain = domain.replace("https://", "").replace("http://", "").replace("www.", "").split('/')[0]
+        
+        st.markdown(f"<div style='color:#777; margin-bottom:10px;'>:: Resolving DNS and Whois for <b>{domain}</b>...</div>", unsafe_allow_html=True)
+        
+        # 1. IP ADDRESS
         try:
-            response = requests.get(url, headers=headers, timeout=1)
-            if response.status_code == 200 and "not found" not in response.text.lower():
-                found_list.append((site, url))
+            ip = socket.gethostbyname(domain)
+            st.markdown(f"""
+            <div class='terminal-line'>
+                <span class='bracket'>[</span><span class='info'> NET </span><span class='bracket'>]</span> 
+                IPv4 Address: <span style='color:#d3dae3'>{ip}</span>
+            </div>""", unsafe_allow_html=True)
+        except:
+            st.markdown("<div class='terminal-line'><span class='minus'>ERR</span> Could not resolve IP</div>", unsafe_allow_html=True)
+
+        # 2. GEO IP (API Gratis)
+        try:
+            r = requests.get(f"http://ip-api.com/json/{domain}").json()
+            if r['status'] == 'success':
+                st.markdown(f"""
+                <div class='terminal-line'>
+                    <span class='bracket'>[</span><span class='info'> GEO </span><span class='bracket'>]</span> 
+                    Server Location: <span style='color:#d3dae3'>{r['city']}, {r['country']} ({r['isp']})</span>
+                </div>""", unsafe_allow_html=True)
         except:
             pass
-        time.sleep(0.1)
 
-    render_terminal_progress(anim_placeholder, 100, "done")
-    time.sleep(0.5)
-    anim_placeholder.empty()
-    
-    return found_list, sites_manual
+        # 3. DNS RECORDS (MX & NS)
+        st.markdown("<br><span style='color:#555'>:: DNS Records</span>", unsafe_allow_html=True)
+        record_types = ['NS', 'MX', 'TXT']
+        for rt in record_types:
+            try:
+                answers = dns.resolver.resolve(domain, rt)
+                for rdata in answers:
+                    st.markdown(f"""
+                    <div class='terminal-line'>
+                        <span class='bracket'>[</span><span class='warn'> DNS </span><span class='bracket'>]</span> 
+                        {rt}: <span style='color:#d3dae3'>{rdata.to_text()}</span>
+                    </div>""", unsafe_allow_html=True)
+            except:
+                pass
+        
+        # 4. WHOIS
+        st.markdown("<br><span style='color:#555'>:: Registrar Info</span>", unsafe_allow_html=True)
+        try:
+            w = whois.whois(domain)
+            st.markdown(f"""
+            <div style='font-size:0.9em; color:#888; border-left: 2px solid #333; padding-left:10px;'>
+                Registrar: {w.registrar}<br>
+                Creation Date: {w.creation_date}<br>
+                Expiration: {w.expiration_date}<br>
+                Emails: {w.emails}
+            </div>
+            """, unsafe_allow_html=True)
+        except:
+            st.markdown("<div class='terminal-line'><span class='minus'>ERR</span> Whois data protected/unavailable</div>", unsafe_allow_html=True)
 
-# --- HEADER NEOFETCH ---
+# --- MAIN LAYOUT & SIDEBAR ---
+with st.sidebar:
+    st.markdown("<h2 style='color:#1793d1; text-align:center;'>// TOOLKIT</h2>", unsafe_allow_html=True)
+    selected_tool = st.radio(
+        "Select Operation:",
+        ["User Recon", "Domain Recon"],
+        label_visibility="collapsed"
+    )
+    st.markdown("<br><div style='text-align:center; color:#555; font-size:0.8em;'>v2.0-stable</div>", unsafe_allow_html=True)
+
+# HEADER NEOFETCH (Static for aesthetics)
 st.markdown(r"""
 <div class="neofetch-container">
     <div class="ascii-logo">
@@ -217,85 +258,24 @@ st.markdown(r"""
         <span class="info-key">taksvj</span>@<span class="info-key">archlinux</span><br>
         ------------------<br>
         <span class="info-key">OS</span>: Arch Linux x86_64<br>
-        <span class="info-key">Host</span>: Streamlit Cloud<br>
         <span class="info-key">Kernel</span>: 6.6.7-arch1-1<br>
-        <span class="info-key">Shell</span>: zsh 5.9<br>
-        <span class="info-key">Tool</span>: OSINT Scanner v5.0 (Pacman)<br>
+        <span class="info-key">Uptime</span>: 12 mins<br>
+        <span class="info-key">Active Tool</span>: """ + selected_tool + r"""<br>
         <span class="info-key">Theme</span>: Dark / Arch Blue
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# --- INPUT SECTION ---
+# LOGIC SWITCHER
+if selected_tool == "User Recon":
+    run_username_recon()
+elif selected_tool == "Domain Recon":
+    run_domain_recon()
+
+# --- FOOTER ---
 st.markdown("""
-<div style="font-family: 'Fira Code'; color: #23d18b; margin-bottom: 10px;">
-    [taksvj@archlinux ~]$ <span style="color: #d3dae3;">sudo pacman -Sybau target_username</span>
+<br>
+<div style="border-top: 1px dashed #333; padding-top: 10px; color: #555; font-size: 0.8em; text-align: right;">
+    [ system ready ] :: execute with caution
 </div>
 """, unsafe_allow_html=True)
-
-# Layout Input & Tombol
-input_col, btn_col = st.columns([5, 1])
-
-with input_col:
-    target = st.text_input("", placeholder="enter username...", label_visibility="collapsed")
-
-with btn_col:
-    run_btn = st.button("EXECUTE")
-
-# Area Animasi Loading
-loading_area = st.empty()
-
-# --- EKSEKUSI ---
-if run_btn:
-    if target:
-        st.markdown(f"<div style='font-family:Fira Code; color:#d3dae3; margin-top: 15px;'>:: Synchronizing package databases for <b>{target}</b>...</div>", unsafe_allow_html=True)
-        time.sleep(0.5)
-        
-        hits, manuals = check_username(target, loading_area)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        # 1. HASIL AUTO
-        if hits:
-            for site, url in hits:
-                st.markdown(f"""
-                <div class='terminal-line'>
-                    <span class='bracket'>[</span><span class='plus'> OK </span><span class='bracket'>]</span> 
-                    Found target on <a href='{url}' target='_blank'>{site}</a>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.markdown("<div class='terminal-line'><span class='minus'>error:</span> target not found in public repositories.</div>", unsafe_allow_html=True)
-
-        # 2. HASIL MANUAL
-        st.markdown("<div style='font-family:Fira Code; color:#777; margin-top:20px; margin-bottom: 5px;'>:: Warning: Some repositories require manual verification:</div>", unsafe_allow_html=True)
-        
-        for site, url_pattern in manuals.items():
-            url = url_pattern.format(target)
-            st.markdown(f"""
-            <div class='terminal-line'>
-                <span class='bracket'>[</span><span class='warn'> ?? </span><span class='bracket'>]</span> 
-                <a href='{url}' target='_blank'>{site}</a>
-            </div>
-            """, unsafe_allow_html=True)
-            
-        # --- FOOTER LOGOS (DIPERBAIKI: RATA KIRI) ---
-        # Perhatikan: Tidak ada spasi di awal baris di dalam st.markdown
-        st.markdown("""
-<div class="social-container">
-<span style='color:#1793d1; font-size: 0.9em;'>:: Transaction finished.</span>
-<a href="https://x.com/taksvj" target="_blank" class="social-link" title="Visit X Profile">
-<div class="social-icon">
-<svg viewBox="0 0 24 24"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"></path></svg>
-</div>
-</a>
-<a href="https://github.com/taksvj" target="_blank" class="social-link" title="Visit GitHub Profile">
-<div class="social-icon">
-<svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.419-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-</div>
-</a>
-</div>
-""", unsafe_allow_html=True)
-
-    else:
-        st.markdown("<br><span class='minus'>error:</span> no target specified.", unsafe_allow_html=True)
