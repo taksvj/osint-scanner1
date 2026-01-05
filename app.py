@@ -5,6 +5,7 @@ import socket
 import whois
 import dns.resolver
 import instaloader
+from faker import Faker # Library baru buat data palsu
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(
@@ -27,6 +28,7 @@ st.markdown("""
         --term-red: #fa5c5c;
         --term-yellow: #f2d648;
         --term-purple: #b16286;
+        --term-cyan: #8ec07c;
     }
 
     .stApp {
@@ -45,18 +47,14 @@ st.markdown("""
         font-family: 'Fira Code', monospace !important;
     }
 
-    .stTextInput > div > div > input {
+    .stTextInput > div > div > input, .stSelectbox > div > div > div {
         background-color: #1a1a1a !important;
         color: var(--arch-fg) !important;
         border: 1px solid #333 !important;
         font-family: 'Fira Code', monospace;
         border-radius: 0;
-        padding-left: 10px;
     }
-    .stTextInput > div > div > input:focus {
-        border-color: var(--arch-blue) !important;
-    }
-
+    
     .stButton > button {
         background: transparent;
         border: 1px solid #444;
@@ -78,6 +76,7 @@ st.markdown("""
     .warn { color: var(--term-yellow); font-weight: bold; }
     .info { color: var(--arch-blue); font-weight: bold; }
     .ig { color: var(--term-purple); font-weight: bold; }
+    .id { color: var(--term-cyan); font-weight: bold; }
     
     a { color: var(--arch-blue) !important; text-decoration: none; border-bottom: 1px dotted #333; }
     
@@ -142,99 +141,130 @@ def run_domain_recon():
     if run and domain:
         domain = domain.replace("https://", "").replace("http://", "").replace("www.", "").split('/')[0]
         st.markdown(f"<div style='color:#777; margin-bottom:10px;'>:: Resolving info for <b>{domain}</b>...</div>", unsafe_allow_html=True)
-        
         try:
             ip = socket.gethostbyname(domain)
             st.markdown(f"<div class='terminal-line'><span class='bracket'>[</span><span class='info'> NET </span><span class='bracket'>]</span> IPv4: <span style='color:#d3dae3'>{ip}</span></div>", unsafe_allow_html=True)
         except: pass
-
         try:
             r = requests.get(f"http://ip-api.com/json/{domain}").json()
             if r['status'] == 'success':
                 st.markdown(f"<div class='terminal-line'><span class='bracket'>[</span><span class='info'> GEO </span><span class='bracket'>]</span> Loc: <span style='color:#d3dae3'>{r['city']}, {r['country']}</span></div>", unsafe_allow_html=True)
         except: pass
-        
         try:
             w = whois.whois(domain)
             st.markdown(f"<div class='terminal-line'><span class='bracket'>[</span><span class='warn'> WHOIS </span><span class='bracket'>]</span> Registrar: <span style='color:#d3dae3'>{w.registrar}</span></div>", unsafe_allow_html=True)
         except: pass
 
-# --- MODULE 3: INSTAGRAM RECON (FIXED) ---
+# --- MODULE 3: INSTAGRAM RECON ---
 def run_instagram_recon():
-    st.markdown("""
-    <div style="font-family: 'Fira Code'; color: #b16286; margin-bottom: 10px;">
-        [taksvj@archlinux ~]$ <span style="color: #d3dae3;">instaloader --profile target_ig</span>
-    </div>
-    """, unsafe_allow_html=True)
-
+    st.markdown("""<div style="font-family: 'Fira Code'; color: #b16286; margin-bottom: 10px;">[taksvj@archlinux ~]$ <span style="color: #d3dae3;">instaloader --profile target_ig</span></div>""", unsafe_allow_html=True)
     c1, c2 = st.columns([5, 1])
-    username = c1.text_input("", placeholder="instagram username (no @)...", label_visibility="collapsed")
+    username = c1.text_input("", placeholder="instagram username...", label_visibility="collapsed")
     run = c2.button("SCAN IG")
 
     if run and username:
-        st.markdown(f"<div style='color:#777; margin-bottom:10px;'>:: Connecting to Instagram Gateway for <b>{username}</b>...</div>", unsafe_allow_html=True)
-        
+        st.markdown(f"<div style='color:#777; margin-bottom:10px;'>:: Connecting to Gateway for <b>{username}</b>...</div>", unsafe_allow_html=True)
         L = instaloader.Instaloader()
-        
         try:
             profile = instaloader.Profile.from_username(L.context, username)
-            
-            # [FIXED] HTML String Rata Kiri biar gak dideteksi sebagai Code Block
             html_content = f"""
 <div style="border: 1px solid #b16286; padding: 20px; margin-top: 10px;">
 <h3 style="color: #b16286; margin:0;">@{profile.username}</h3>
-<div style="color: #777; font-size: 0.9em; margin-bottom: 15px;">User ID: {profile.userid}</div>
+<div style="color: #777; font-size: 0.9em; margin-bottom: 15px;">ID: {profile.userid}</div>
 <div style="display: flex; gap: 30px;">
-<div>
-<div style="color: #d3dae3; font-size: 1.5em; font-weight: bold;">{profile.mediacount}</div>
-<div style="color: #b16286;">Posts</div>
-</div>
-<div>
-<div style="color: #d3dae3; font-size: 1.5em; font-weight: bold;">{profile.followers}</div>
-<div style="color: #b16286;">Followers</div>
-</div>
-<div>
-<div style="color: #d3dae3; font-size: 1.5em; font-weight: bold;">{profile.followees}</div>
-<div style="color: #b16286;">Following</div>
-</div>
+<div><div style="color: #d3dae3; font-size: 1.5em; font-weight: bold;">{profile.mediacount}</div><div style="color: #b16286;">Posts</div></div>
+<div><div style="color: #d3dae3; font-size: 1.5em; font-weight: bold;">{profile.followers}</div><div style="color: #b16286;">Followers</div></div>
+<div><div style="color: #d3dae3; font-size: 1.5em; font-weight: bold;">{profile.followees}</div><div style="color: #b16286;">Following</div></div>
 </div>
 <div style="margin-top: 15px; border-top: 1px dashed #333; padding-top: 10px;">
 <span style="color: #b16286;">Bio:</span> <span style="color: #aaa;">{profile.biography}</span>
 </div>
-<div style="margin-top: 5px;">
-<span style="color: #b16286;">Verified:</span> <span style="color: {'#23d18b' if profile.is_verified else '#fa5c5c'}">{str(profile.is_verified)}</span> | 
-<span style="color: #b16286;">Private:</span> <span style="color: {'#fa5c5c' if profile.is_private else '#23d18b'}">{str(profile.is_private)}</span>
-</div>
-<div style="margin-top: 5px;">
-<span style="color: #b16286;">External URL:</span> <a href="{profile.external_url}" target="_blank">{profile.external_url}</a>
-</div>
 </div>
 """
             st.markdown(html_content, unsafe_allow_html=True)
-
-            # Link Gambar (Opsional)
-            st.markdown(f"<br><div class='terminal-line'><span class='bracket'>[</span><span class='ig'> IMG </span><span class='bracket'>]</span> Profile Picture URL: <a href='{profile.profile_pic_url}' target='_blank'>Click to view</a></div>", unsafe_allow_html=True)
-
         except Exception as e:
-            error_msg = str(e)
-            if "LoginRequired" in error_msg:
-                st.error("FATAL ERROR: Login Required. IP Server ini mungkin diblokir Instagram.")
-            elif "ConnectionRefused" in error_msg or "429" in error_msg:
-                st.error("FATAL ERROR: 429 Too Many Requests (IP Blocked).")
-            elif "ProfileNotExists" in error_msg:
-                st.warning(f"User '{username}' tidak ditemukan.")
-            else:
-                st.error(f"Error: {error_msg}")
+            st.error(f"Error: {e}")
+
+# --- MODULE 4: PERSONA FORGE (FAKE ID) ---
+def run_persona_forge():
+    st.markdown("""
+    <div style="font-family: 'Fira Code'; color: #8ec07c; margin-bottom: 10px;">
+        [taksvj@archlinux ~]$ <span style="color: #d3dae3;">python forge_identity.py --locale en_US</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    c1, c2 = st.columns([3, 1])
+    locale = c1.selectbox("Select Region", ["en_US", "id_ID", "ja_JP", "ru_RU", "de_DE"], label_visibility="collapsed")
+    run = c2.button("GENERATE ID")
+
+    if run:
+        fake = Faker(locale)
+        
+        # Generate Data
+        name = fake.name()
+        addr = fake.address().replace('\n', ', ')
+        job = fake.job()
+        email = fake.email()
+        ua = fake.user_agent()
+        ipv4 = fake.ipv4()
+        credit_card = fake.credit_card_number()
+        
+        st.markdown(f"""
+        <div style="border: 1px solid #8ec07c; padding: 20px; margin-top: 10px; background: rgba(0,20,0,0.2);">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed #444; padding-bottom: 10px;">
+                <h3 style="color: #8ec07c; margin:0;">IDENTITY FORGED</h3>
+                <span style="color: #555; font-size: 0.8em;">[ VERIFIED ]</span>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                <div>
+                    <div style="color: #666; font-size: 0.8em;">FULL NAME</div>
+                    <div style="color: #d3dae3; font-size: 1.2em; font-weight: bold;">{name}</div>
+                </div>
+                <div>
+                    <div style="color: #666; font-size: 0.8em;">OCCUPATION</div>
+                    <div style="color: #d3dae3;">{job}</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <div style="color: #666; font-size: 0.8em;">ADDRESS</div>
+                <div style="color: #d3dae3;">{addr}</div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                <div>
+                    <div style="color: #666; font-size: 0.8em;">EMAIL</div>
+                    <div style="color: #8ec07c;">{email}</div>
+                </div>
+                <div>
+                    <div style="color: #666; font-size: 0.8em;">IP SPOOF</div>
+                    <div style="color: #fa5c5c;">{ipv4}</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 15px; border-top: 1px dashed #333; padding-top: 10px;">
+                <div style="color: #666; font-size: 0.8em;">USER AGENT</div>
+                <div style="color: #aaa; font-size: 0.8em; font-family: monospace;">{ua}</div>
+            </div>
+             <div style="margin-top: 10px;">
+                <div style="color: #666; font-size: 0.8em;">CREDIT CARD (FAKE)</div>
+                <div style="color: #d3dae3; font-family: monospace;">{credit_card}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("<br><div class='terminal-line'><span class='plus'>SUCCESS</span> Identity saved to memory buffer.</div>", unsafe_allow_html=True)
 
 # --- MAIN LAYOUT & SIDEBAR ---
 with st.sidebar:
     st.markdown("<h2 style='color:#1793d1; text-align:center;'>// TOOLKIT</h2>", unsafe_allow_html=True)
     selected_tool = st.radio(
         "Select Operation:",
-        ["User Recon", "Domain Recon", "Instagram Recon"],
+        ["User Recon", "Domain Recon", "Instagram Recon", "Persona Forge"],
         label_visibility="collapsed"
     )
-    st.markdown("<br><div style='text-align:center; color:#555; font-size:0.8em;'>v3.1-stable</div>", unsafe_allow_html=True)
+    st.markdown("<br><div style='text-align:center; color:#555; font-size:0.8em;'>v4.0-matrix</div>", unsafe_allow_html=True)
 
 # HEADER NEOFETCH
 st.markdown(r"""
@@ -266,6 +296,8 @@ elif selected_tool == "Domain Recon":
     run_domain_recon()
 elif selected_tool == "Instagram Recon":
     run_instagram_recon()
+elif selected_tool == "Persona Forge":
+    run_persona_forge()
 
 # --- FOOTER ---
 st.markdown("""<br><div style="border-top: 1px dashed #333; padding-top: 10px; color: #555; font-size: 0.8em; text-align: right;">[ system ready ] :: execute with caution</div>""", unsafe_allow_html=True)
