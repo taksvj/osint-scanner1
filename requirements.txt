@@ -7,3 +7,5 @@ Faker
 Pillow
 geopy
 phonenumbers
+pytesseract
+googletrans==4.0.0-rc1
